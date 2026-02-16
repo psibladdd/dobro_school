@@ -14,9 +14,10 @@
         tg.expand();
 
         document.getElementById('user-data').textContent = tg.initDataUnsafe.user ? tg.initDataUnsafe.user.first_name : 'Неизвестно';
-        
+
         document.getElementById('send-btn').addEventListener('click', () => {
             tg.MainButton.setText('Отправить').show();
+            tg.sendData("любая строка");
             tg.onEvent('mainButtonClicked', () => {
                 tg.sendData(JSON.stringify({action: 'example', value: 'Привет из Mini App!'}));
             });
