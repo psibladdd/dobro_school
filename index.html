@@ -6,6 +6,11 @@
     <title>Mini App Example</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
+
+        @font-face {
+            font-family: Archive Ukr;
+            src: url(ArchiveUkr.ttf);
+        }
         .main {
             background-color: #ffffff;
             min-height: 100vh;
@@ -13,11 +18,9 @@
             justify-content: center;
         }
 
-        
         .elipse {
             position: relative;
             display: inline-block;
-            width: 100vw;
 
         }
 
@@ -34,14 +37,21 @@
             height: 100%;
             object-fit: contain;
         }
+        .text{
+            font-family: Archive Ukr;
+        }
     </style>
 </head>
 <body>
     <div id="mainApp" class="main">
         <div class="elipse">
-            <img src="Ellipse 6.svg" alt="Ellipse"/>
-            <img class="person" src="freepik__pixel-art-fulllength-child-wearing-a-unicorn-hat-o__30059 1.svg" alt="Person"/>
+            <div>
+                <img src="Ellipse 6.svg" alt="Ellipse"/>
+                <img class="person" src="freepik__pixel-art-fulllength-child-wearing-a-unicorn-hat-o__30059 1.svg" alt="Person"/>
+            </div>
+            <a class="text" >Активность</a>
         </div>
+
     </div>
 
     <script>
