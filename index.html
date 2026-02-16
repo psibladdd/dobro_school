@@ -21,13 +21,23 @@
         .elipse {
             position: relative;
             display: inline-block;
+            justify-content: center;
 
         }
+        .btn_grid{
+        }
+        .buttons{
+            display: flex;
+            justify-content: space-between;
+            gap:20%;
+        }
+
         button{
             background-color: #A099F6;
             color: white;
             width:40%;
-            padding:2px;
+            flex: 1 0 auto;
+            padding:0 10px;
             border: 0px solid;
             border-radius: 10px;
         }
@@ -56,13 +66,15 @@
                 <img src="Ellipse 6.svg" alt="Ellipse"/>
                 <img class="person" src="freepik__pixel-art-fulllength-child-wearing-a-unicorn-hat-o__30059 1.svg" alt="Person"/>
             </div>
-            <div class="buttons">
-                <button class="text" >Дружелюбие</button>
-                <button class="text" >Интеллект</button>
-            </div>
-            <div>
-                <button class="text" >Активность</button>
-                <button class="text" >Личностный рост</button>
+            <div class="btn_grid">
+                <div class="buttons">
+                    <button class="text" >Дружелюбие</button>
+                    <button class="text" >Интеллект</button>
+                </div>
+                <div class="buttons">
+                    <button class="text" >Активность</button>
+                    <button class="text" >Личностный рост</button>
+                </div>
             </div>
             <button class="text" >Творчество</button>
         </div>
