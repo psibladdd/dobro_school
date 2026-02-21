@@ -63,20 +63,20 @@
     <div id="mainApp" class="main">
         <div class="elipse">
             <div>
-                <img style="width:100%" src="Ellipse 6.svg" alt="Ellipse"/>
+                <img src="Ellipse 6.svg" alt="Ellipse"/>
                 <img class="person" src="freepik__pixel-art-fulllength-child-wearing-a-unicorn-hat-o__30059 1.svg" alt="Person"/>
             </div>
             <div class="btn_grid">
                 <div class="buttons">
-                    <button class="text" >Дружелюбие</button>
-                    <button class="text" >Интеллект</button>
+                    <button class="text" onclick="showModal()">Дружелюбие</button>
+                    <button class="text" onclick="showModal()">Интеллект</button>
                 </div>
                 <div class="buttons">
-                    <button class="text" >Активность</button>
-                    <button class="text" >Личностный рост</button>
+                    <button class="text" onclick="showModal()">Активность</button>
+                    <button class="text" onclick="showModal()">Личностный рост</button>
                 </div>
             </div>
-            <button class="text" >Творчество</button>
+            <button class="text" onclick="showModal()">Творчество</button>
             <span id="user-data"></span>
         </div>
 
@@ -87,6 +87,49 @@
         const tg = window.Telegram.WebApp;
         document.getElementById('user-data').textContent = tg.initDataUnsafe.user ? tg.initDataUnsafe.user.first_name : 'Неизвестно';
         tg.expand();
-    </script>
+
+        const tasks = {
+          "Дружелюбие": {"1": "Задание 1"},
+          "Интеллект": {"1": "Задание 1"},
+          "Активность": {"1": "Задание 1"},
+          "Личностный рост": {"1": "Задание 1"},
+          "Творчество": {"1": "Задание 1"}
+        };
+
+        // Функция модалки
+        function showModal(category) {
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position:fixed;top:0;left:0;width:100%;height:100%;
+                background:rgba(0,0,0,0.5);z-index:9999;display:flex;
+                justify-content:center;align-items:center;
+            `;
+
+            modal.innerHTML = `
+                <div style="
+                    background:white;border-radius:15px;width:90%;max-height:80%;
+                    padding:20px;overflow:auto;
+                ">
+                    <h3>${category}</h3>
+                    <div>${tasks[category] ? Object.keys(tasks[category])[0] : 'Нет заданий'}</div>
+                    <button onclick="this.parentElement.parentElement.remove()"
+                        style="margin-top:20px;padding:10px;background:#A099F6;color:white;border:none;border-radius:10px;">
+                        Закрыть
+                    </button>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+            modal.onclick = (e) => e.target === modal && modal.remove();
+        }
+
+        // Обработчики
+        document.querySelectorAll('button.text').forEach(button => {
+            const category = button.textContent.trim();
+            button.onclick = () => showModal(category);
+        });
+        </script>
+
+
 </body>
 </html>
