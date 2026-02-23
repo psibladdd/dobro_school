@@ -150,7 +150,7 @@
         // Загрузка заданий пользователя с сервера
         async function loadUserTasks() {
             try {
-                const response = await fetch('https://your-domain.com/api/tasks', {
+                const response = await fetch('http://localhost:8000/api/tasks', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({initData: tg.initData})
@@ -282,7 +282,7 @@
         // Отметить задание выполненным
         async function completeTask(taskId) {
             try {
-                const response = await fetch('https://your-domain.com/api/complete_task', {
+                const response = await fetch('http://localhost:8000/api/complete_task', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({initData: tg.initData, task_id: taskId})
