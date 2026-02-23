@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ШВД'26 - Геймификация</title>
+    <title>Mini App Example</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         @font-face {
@@ -11,94 +11,82 @@
             src: url(ArchiveUkr.ttf);
         }
         .main {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-color: #ffffff;
             min-height: 100vh;
             display: flex;
             justify-content: center;
-            align-items: center;
-            padding: 20px;
         }
         .elipse {
             position: relative;
             display: inline-block;
-            text-align: center;
+            justify-content: center;
         }
-        .btn_grid { margin-top: 30px; }
-        .buttons {
+        .btn_grid{}
+        .buttons{
             display: flex;
             justify-content: space-between;
-            gap: 20px;
-            margin-bottom: 15px;
+            gap:20%;
         }
-        button {
-            background: rgba(255,255,255,0.2);
+        button{
+            background-color: #A099F6;
             color: white;
-            width: 45%;
-            padding: 15px;
-            border: none;
-            border-radius: 15px;
-            font-family: 'Archive Ukr';
-            font-size: 16px;
-            font-weight: bold;
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
+            width:40%;
+            flex: 1 0 auto;
+            padding:0 10px;
+            border: 0px solid;
+            border-radius: 10px;
         }
-        button:hover { background: rgba(255,255,255,0.3); transform: scale(1.05); }
         .person {
             position: absolute;
             left: 50%;
-            top: 25%;
+            top:30%;
             transform: translate(-50%, -50%);
-            width: 200px;
-            height: 200px;
         }
-        .person img { width: 100%; height: 100%; object-fit: contain; }
-        .text { font-family: 'Archive Ukr'; }
-        .progress { 
-            background: rgba(255,255,255,0.2); 
-            height: 8px; 
-            border-radius: 4px; 
-            margin: 20px 0;
-            overflow: hidden;
-        }
-        .progress-bar {
+        .person img {
+            width: 100%;
             height: 100%;
-            background: #4CAF50;
-            transition: width 0.5s ease;
+            object-fit: contain;
         }
-        #user-data {
-            position: fixed;
-            top: 10px;
-            right: 10px;
+        .text{
+            font-family: Archive Ukr;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            font-family: Archive Ukr;
+            color: #A099F6;
+            font-size: 18px;
+        }
+        .completed-badge {
+            background: #4CAF50;
             color: white;
-            font-family: 'Archive Ukr';
-            font-size: 14px;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin-left: 10px;
         }
     </style>
 </head>
 <body>
-    <div id="user-data"></div>
     <div id="mainApp" class="main">
         <div class="elipse">
-            <div style="position: relative;">
-                <img src="Ellipse 6.svg" alt="Ellipse" style="width: 300px; height: 300px;"/>
+            <div>
+                <img src="Ellipse 6.svg" alt="Ellipse"/>
                 <img class="person" src="freepik__pixel-art-fulllength-child-wearing-a-unicorn-hat-o__30059 1.svg" alt="Person"/>
             </div>
-            <div class="progress">
-                <div id="progressBar" class="progress-bar" style="width: 0%"></div>
-            </div>
-            <div class="btn_grid">
+            <div id="loading" class="loading">🔄 Загружаем твои задания...</div>
+            <div class="btn_grid" id="btnGrid" style="display:none;">
                 <div class="buttons">
-                    <button class="text" onclick="showModal('Дружелюбность')">🤝 Дружелюбность</button>
-                    <button class="text" onclick="showModal('Интеллект')">🧠 Интеллект</button>
+                    <button class="text" data-category="Дружелюбность">Дружелюбность</button>
+                    <button class="text" data-category="Интеллект">Интеллект</button>
                 </div>
                 <div class="buttons">
-                    <button class="text" onclick="showModal('Активность')">⚡ Активность</button>
-                    <button class="text" onclick="showModal('Личностный рост')">🌱 Рост</button>
+                    <button class="text" data-category="Активность">Активность</button>
+                    <button class="text" data-category="Личностный рост">Личностный рост</button>
                 </div>
             </div>
-            <button class="text" onclick="showModal('Творчество')" style="width: 100%; margin-top: 10px;">🎨 Творчество</button>
-            <div id="progressText" style="color: white; font-family: 'Archive Ukr'; margin-top: 10px; font-size: 18px;"></div>
+            <button id="creativeBtn" class="text" data-category="Творчество" style="display:none;">Творчество</button>
+            <span id="user-data"></span>
         </div>
     </div>
 
@@ -106,104 +94,179 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
         
-        const user = tg.initDataUnsafe.user;
-        document.getElementById('user-data').textContent = user ? `${user.first_name}!` : 'Гость';
+        let userTasks = {}; // { "11": true, "12": false, ... }
+        let userId = null;
 
+        document.getElementById('user-data').textContent = tg.initDataUnsafe?.user?.first_name || 'Неизвестно';
+
+        // Карта категорий → ID заданий из БД
+        const categoryToTasks = {
+            'Дружелюбность': ['21','22','23','24','25'],
+            'Активность': ['11','12','13','14','15'],
+            'Интеллект': ['31','32','33','34','35'],
+            'Личностный рост': ['41','42','43','44','45'],
+            'Творчество': ['51','52','53','54','55']
+        };
+
+        // База заданий
         const tasks = {
-            "Дружелюбность": {
-                "Прогуляться с человеком из другой команды": "Сфотографируйся на прогулке с кем-то из другой команды! 📸",
-                "Анкета лучшей подружки с организатором": "Узнай любимый цвет, ДР и историю из детства у организатора! 📝", 
-                "Респект участнику команды": "Похвали участника команды за что-то крутое! 💬",
-                "Перекус по цветам": "Сделайте с участником вкусняшки одного цвета! 🍬",
-                "Парный костюм": "Придумайте с кем-то парные костюмы! 👗👔"
-            },
-            "Интеллект": {
-                "1-е ДЗ > 70 баллов": "Выполни первое домашнее задание на отлично! 📚",
-                "2-е ДЗ > 70 баллов": "Второе ДЗ тоже на отлично! 📖", 
-                "3-е ДЗ > 70 баллов": "Третье ДЗ без ошибок! ✏️",
-                "4-е ДЗ > 70 баллов": "Четвертое на высший балл! 📘",
-                "5-е ДЗ > 70 баллов": "Все ДЗ сделаны идеально! 🎓"
+            "Личностный рост": {
+                "41": "Написать 3 игры на вторичное знакомство: Подробно распиши 3 любые игры, которые помогут детям быстро и весело закрепить знания имен друг друга.",
+                "42": "Написать решение кейса: Твоим детям по 7 лет. Двое ребят в отряде поссорились из‑за того, кто будет ведущим в игре.",
+                "43": "Задать 1 вопрос в течение лекции спикеру (по делу, без шуток): Действительно ли ты слушаешь спикера или только притворяешься? Задай ему вопрос по теме и пришли голосовое сообщение с его ответом в подтверждение.",
+                "44": "Встретиться с куратором вне занятия: Говорят, кураторы вас постоянно куда-то зовут. Хотим увидеть на фотографии, как круто вы проводите время.",
+                "45": "Узнать тайну одного из организаторов: У каждого из нас есть своя тайна. Хочешь ее узнать? Попробуй пообщаться с нами. В подтверждение пришли тайну текстом."
             },
             "Активность": {
-                "Танцы на сцене": "Потанцуй на сцене или зарядке! 💃🕺",
-                "Игра с залом": "Проведи игру для всех! 🎮",
-                "Мини-сюрприз для зала": "Порадуй всех чем-то бесплатным! 🎁",
-                "Победа в мероприятии": "Выиграй в конкурсе или игре! 🏆",
-                "3 кружка о дне": "Расскажи в чате о своем дне! 📱"
+                "11": "Выбраться танцевать на сцену: Может быть вы с командой подготовите крутой номер, где ты будешь танцевать? А может быть спросишь у организаторов и присоединишься на зарядку? В общем, пришли видео.",
+                "12": "Провести игру с залом на занятии: Уточни у куратора, когда это можно сделать, но знай – количество возможностей ограничено. Не забудь попросить друга заснять этот момент.",
+                "13": "Подготовить мини-сюрприз для всех присутствующих на занятии: Подумай, чем ты можешь порадовать абсолютно всех присутствующих? Важное условие – это должно стоить 0 рублей. Скинь фото-подтверждение",
+                "14": "Одержать победу в одном из мероприятий, проходящих на занятии: Мы уверены, у тебя это точно получится! Сфотографируй и отправь грамоту, которую получишь за победу. (это может быть и командная победа).",
+                "15": "Записать в общую беседу 3 кружка о том, как проходит твой день: Нам действительно интересно, чем ты живешь вне занятий. Перешли эти кругляши потом сюда."
             },
-            "Личностный рост": {
-                "3 игры на знакомство": "Придумай 3 игры для знакомства детей! 🎲",
-                "Решение кейса": "Реши кейс про ссору 7-летних детей! 🤝",
-                "Вопрос спикеру": "Задай вопрос спикеру на лекции! ❓",
-                "Встреча с куратором": "Сфоткайся с куратором вне занятий! 📸",
-                "Тайна организатора": "Узнай тайну одного из нас! 🤫"
+            "Дружелюбность": {
+                "21": "Где-то прогуляться с человеком из другой команды: Время знакомиться с новыми людьми! А что может быть проще, чем прогулка? Кстати, пришли нам фото-подтверждение.",
+                "22": "Заполнить анкету лучшей подружки с одним из организаторов: Выбери любого организатора и узнай: какой у него любимый цвет; когда у него день рождения; его смешную историю из детства. Пришли нам его ответы, но знай, у него тоже должны быть твои ответы на эти вопросы.",
+                "23": "Кинуть респект улиц одному из участников твоей команды: Выбери одного из участников твоей команды, когда почувствуешь, что он ультра хорош. Отправь нам его ник в тг.",
+                "24": "Устроить перекус по цветам с любым из участников: Знаешь модные видео из тик-тока, где друзья покупают друг другу вкусняшки по цветам? Сделай также с любым из участников на перекусе, а потом вместе отправьте фото, что у вас получилось.",
+                "25": "Сделать парный костюм с любым из участников: Умение делать парные костюмы очень пригодиться на смене. Единственное отличие – сейчас ты можешь выбрать себе напарника самостоятельно. Скиньте нам свои фотки."
+            },
+            "Интеллект": {
+                "31": "Получить за выполнение первого домашнего задания более 70 баллов: Просто сделай это! Мы уверены, у тебя получится! Кстати, его можно переписывать, если не получается с первого раза...",
+                "32": "Получить за выполнение второго домашнего задания более 70 баллов: Просто сделай это! Мы уверены, у тебя получится! Кстати, его можно переписывать, если не получается с первого раза...",
+                "33": "Получить за выполнение третьего домашнего задания более 70 баллов: Просто сделай это! Мы уверены, у тебя получится! Кстати, его можно переписывать, если не получается с первого раза...",
+                "34": "Получить за выполнение четвертого домашнего задания более 70 баллов: Просто сделай это! Мы уверены, у тебя получится! Кстати, его можно переписывать, если не получается с первого раза...",
+                "35": "Получить за выполнение пятого домашнего задания более 70 баллов: Просто сделай это! Мы уверены, у тебя получится! Кстати, его можно переписывать, если не получается с первого раза..."
             },
             "Творчество": {
-                "Вертикальное видео": "Сними рилс/тикток с участником! 🎥 #ШВД26",
-                "Косплей мема": "Закосплей свой любимый мем! 😂",
-                "2 педагогические шутки": "Придумай шутки для детей! 😄",
-                "Крутой костюм": "Приди на занятие в костюме! 🎭",
-                "Тематическая аватарка": "Сделай аватарку ШВД'26! 🖼️"
+                "51": "Снять вертикальное видео с одним из участников: Рилс? Тики-ток? ВК-клип? Что хотите, главное – пришлите нам его на оценку. Не забудь указать в описании его – #ШВД26",
+                "52": "Сделать фотографию-косплей на любой мем: Какой твою любимый мем? Давай ты закосплеишь его и пришлешь нам, а еще можно дополнительно скинуть его в общий чатикс на оценку.",
+                "53": "Придумать 2 педагогические шутки: Ты уже почти педагог. Подумай, над чем они смеются. Напиши нам текстовые 2 шутеечки, чтобы мы тоже посмеялись.",
+                "54": "Отличиться костюмом на занятии: Помни – умение делать костюм реально важное в вожатском мире. Сделай самый крутой в мире костюм, приди в нем на занятие и скинь нам фотку.",
+                "55": "Сделать тематическую аватарку и установить ее в профиль на неделю: Видел у организаторов стоят общие тематические аватарки? Ты же тоже так сможешь! Главное – присутствие надписи «ШВД'26» и скинуть ее нам, конечно же."
             }
         };
 
-        // TASK CODES для бота
-        const TASK_CODES = {
-            "11": "Прогуляться с человеком из другой команды",
-            "12": "Анкета лучшей подружки с организатором", 
-            "13": "Респект участнику команды",
-            "14": "Перекус по цветам",
-            "15": "Парный костюм",
-            "21": "1-е ДЗ > 70 баллов",
-            "22": "2-е ДЗ > 70 баллов",
-            "23": "3-е ДЗ > 70 баллов",
-            "24": "4-е ДЗ > 70 баллов",
-            "25": "5-е ДЗ > 70 баллов",
-            "31": "Танцы на сцене",
-            "32": "Игра с залом",
-            "33": "Мини-сюрприз для зала",
-            "34": "Победа в мероприятии",
-            "35": "3 кружка о дне",
-            "41": "3 игры на знакомство",
-            "42": "Решение кейса",
-            "43": "Вопрос спикеру",
-            "44": "Встреча с куратором",
-            "45": "Тайна организатора",
-            "51": "Вертикальное видео",
-            "52": "Косплей мема",
-            "53": "2 педагогические шутки",
-            "54": "Крутой костюм",
-            "55": "Тематическая аватарка"
-        };
-
-        function updateProgress() {
-            const userId = tg.initDataUnsafe.user?.id || 'test';
-            let totalDone = 0, totalTasks = 0;
+        // Загрузка заданий пользователя с сервера
+        async function loadUserTasks() {
+            try {
+                const response = await fetch('https://your-domain.com/api/tasks', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({initData: tg.initData})
+                });
+                const data = await response.json();
+                
+                if (data.tasks && data.user_id) {
+                    userTasks = data.tasks.reduce((acc, task) => {
+                        acc[task.id] = task.done;
+                        return acc;
+                    }, {});
+                    userId = data.user_id;
+                }
+            } catch (e) {
+                console.error('Ошибка загрузки заданий:', e);
+                tg.showAlert('Не удалось загрузить задания. Проверьте подключение.');
+            }
             
-            Object.keys(tasks).forEach(category => {
-                const completedKey = `completed_${userId}_${category.toLowerCase()}`;
-                const completed = JSON.parse(localStorage.getItem(completedKey) || '[]');
-                totalDone += completed.length;
-                totalTasks += Object.keys(tasks[category]).length;
+            showButtons();
+        }
+
+        // Показать кнопки категорий
+        function showButtons() {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('btnGrid').style.display = 'block';
+            document.getElementById('creativeBtn').style.display = 'block';
+        }
+
+        // Количество незавершенных заданий в категории
+        function getPendingCount(category) {
+            const taskIds = categoryToTasks[category] || [];
+            return taskIds.filter(id => !userTasks[id]).length;
+        }
+
+        // Модальное окно с заданиями категории (ТОЛЬКО НЕСДЕЛАННЫЕ)
+        function showModal(category) {
+            const pendingTasks = [];
+            const taskIds = categoryToTasks[category] || [];
+            
+            // Фильтруем только незавершенные
+            taskIds.forEach(taskId => {
+                if (!userTasks[taskId] && tasks[category][taskId]) {
+                    pendingTasks.push({id: taskId, text: tasks[category][taskId]});
+                }
             });
-            
-            const progress = totalTasks ? (totalDone / totalTasks) * 100 : 0;
-            document.getElementById('progressBar').style.width = progress + '%';
-            document.getElementById('progressText').textContent = `${Math.round(totalDone)}/${totalTasks} заданий`;
+
+            if (pendingTasks.length === 0) {
+                tg.showAlert(`🎉 В категории "${category}" все задания выполнены!`);
+                return;
+            }
+
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.style.cssText = `
+                position:fixed;top:0;left:0;width:100%;height:100%;
+                background:rgba(0,0,0,0.5);z-index:9999;display:flex;
+                justify-content:center;align-items:center;
+            `;
+
+            let taskHtml = '';
+            pendingTasks.forEach((task, index) => {
+                taskHtml += `
+                    <div style="margin-bottom:15px;background:white;border-radius:10px;overflow:hidden;">
+                        <div onclick="toggleTask(${index})" style="
+                            padding:15px;cursor:pointer;background:#f8f9ff;
+                            color:#A099F6;font-weight:bold;font-size:18px;user-select:none;
+                            border-bottom:1px solid #eee;
+                        " class="task-header-${index}">
+                            ${task.text.split(':')[0]}
+                            <span style="float:right;font-size:14px;">▼</span>
+                        </div>
+                        <div id="task-desc-${index}" style="
+                            max-height:0;overflow:hidden;transition:max-height 0.3s ease;
+                            background:white;color:#666;padding:0 20px 5px;
+                        ">
+                            <div style="line-height:1.5;padding:15px 0;font-size:16px;">
+                                ${task.text}
+                            </div>
+                            <button onclick="completeTask('${task.id}')" style="
+                                margin:15px 0;width:100%;padding:12px;background:#4CAF50;
+                                color:white;border:none;border-radius:10px;font-weight:bold;
+                                font-size:16px;font-family:'Archive Ukr';
+                            ">✅ Задание выполнено!</button>
+                            <button onclick="Telegram.WebApp.openTelegramLink('https://t.me/mary_vii')" style="
+                                width:100%;padding:10px;background:#EDE8FF;color:#5F33E1;
+                                border:none;border-radius:10px;font-weight:bold;margin-bottom:10px;
+                            ">📤 Отправить организатору</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            modal.innerHTML = `
+                <div style="
+                    background:#A099F6;border-radius:15px;width:90%;max-height:80vh;
+                    padding:20px;overflow:auto;color:white;font-family:'Archive Ukr';
+                ">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h1 style="margin: 0;font-size:24px;">${category}</h1>
+                        <button onclick="this.parentElement.parentElement.parentElement.remove()"
+                            style="padding: 5px 10px;background: white; color: #A099F6; border: none; border-radius: 20px; cursor: pointer; font-size: 20px; font-weight: bold; width:40px;height:40px;display:flex;align-items:center;justify-content:center;">
+                            ×
+                        </button>
+                    </div>
+                    <div style="background-color: white; height: 2px; margin-bottom:15px;"></div>
+                    ${taskHtml}
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.remove();
+            });
         }
 
-        function openCuratorChat(category, taskName, taskCode, index) {
-            const curatorUsername = 'mary_vii';
-            const userId = tg.initDataUnsafe.user?.id || 'test';
-            const userName = tg.initDataUnsafe.user?.first_name || 'Гость';
-            
-            const message = `👤 <b>${userName}</b> (ID: <code>${userId}</code>)\n📂 <b>${category}</b>\n🔢 <b>${taskCode}</b>\n📋 <b>${taskName}</b>\n\n#ШВД26`;
-            
-            const telegramLink = `https://t.me/${curatorUsername}?text=${encodeURIComponent(message)}`;
-            document.querySelector('.modal-overlay')?.remove();
-            Telegram.WebApp.openTelegramLink(telegramLink);
-        }
-
+        // Toggle раскрытия задания
         window.toggleTask = function(index) {
             const desc = document.getElementById(`task-desc-${index}`);
             const header = document.querySelector(`.task-header-${index}`);
@@ -216,82 +279,41 @@
             }
         };
 
-        async function showModal(category) {
-            const modal = document.createElement('div');
-            modal.className = 'modal-overlay';
-            modal.style.cssText = `
-                position:fixed;top:0;left:0;width:100%;height:100%;
-                background:rgba(0,0,0,0.7);z-index:9999;display:flex;
-                justify-content:center;align-items:center;padding:20px;
-            `;
-            
-            const userId = tg.initDataUnsafe.user?.id || 'test';
-            const completedKey = `completed_${userId}_${category.toLowerCase()}`;
-            const completedTasks = JSON.parse(localStorage.getItem(completedKey) || '[]');
-            const allTasks = tasks[category] || {};
-            
-            let tasksHTML = '';
-            let taskIndex = 0;
-            Object.entries(allTasks).forEach(([taskName, desc]) => {
-                const taskCode = Object.keys(TASK_CODES).find(code => TASK_CODES[code] === taskName) || `${taskIndex + 1}`;
-                const isCompleted = completedTasks.includes(taskName);
+        // Отметить задание выполненным
+        async function completeTask(taskId) {
+            try {
+                const response = await fetch('https://your-domain.com/api/complete_task', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({initData: tg.initData, task_id: taskId})
+                });
                 
-                if (!isCompleted) {
-                    tasksHTML += `
-                        <div style="margin-bottom:15px;background:white;border-radius:15px;overflow:hidden;box-shadow:0 5px 15px rgba(0,0,0,0.1);">
-                            <div onclick="toggleTask(${taskIndex})" class="task-header-${taskIndex}" style="
-                                padding:20px;cursor:pointer;background:linear-gradient(135deg,#A099F6,#5F33E1);
-                                color:white;font-weight:bold;font-size:18px;user-select:none;
-                            ">
-                                📋 ${taskName}
-                                <span style="float:right;font-size:16px;">▼</span>
-                            </div>
-                            <div id="task-desc-${taskIndex}" style="
-                                max-height:0;overflow:hidden;transition:all 0.4s ease;
-                                background:white;color:#333;padding:0;
-                            ">
-                                <div style="padding:20px;line-height:1.6;font-size:16px;">${desc}</div>
-                                <button onclick="openCuratorChat('${category}', '${taskName.replace(/'/g, "\\'")}', '${taskCode}', ${taskIndex})"
-                                    style="width:100%;padding:15px;background:linear-gradient(135deg,#FF6B6B,#FF8E8E);color:white;border:none;border-radius:0 0 15px 15px;font-weight:bold;font-size:16px;">
-                                    📤 Отправить куратору (${taskCode})
-                                </button>
-                            </div>
-                        </div>
-                    `;
+                if (response.ok) {
+                    userTasks[taskId] = true;
+                    tg.sendData(JSON.stringify({task_id: taskId}));
+                    tg.showAlert('✅ Задание отмечено выполненным!');
+                    setTimeout(() => location.reload(), 1500);
                 }
-                taskIndex++;
-            });
-            
-            if (tasksHTML === '') {
-                tasksHTML = '<div style="padding:60px;text-align:center;background:white;border-radius:20px;"><h2 style="color:#4CAF50;">🎉 Все задания категории выполнены!</h2></div>';
+            } catch (e) {
+                tg.showAlert('Ошибка сохранения. Попробуйте позже.');
             }
-            
-            modal.innerHTML = `
-                <div style="
-                    background:white;border-radius:20px;width:95%;max-height:85%;max-width:500px;
-                    padding:0;overflow:hidden;box-shadow:0 20px 40px rgba(0,0,0,0.3);
-                ">
-                    <div style="background:linear-gradient(135deg,#A099F6,#5F33E1);padding:25px;color:white;">
-                        <div style="display:flex;justify-content:space-between;align-items:center;">
-                            <h1 style="margin:0;font-size:28px;font-family:'Archive Ukr';">${category}</h1>
-                            <button onclick="this.parentElement.parentElement.parentElement.remove()" style="
-                                padding:10px 15px;background:rgba(255,255,255,0.3);color:white;border:none;border-radius:50%;cursor:pointer;font-size:24px;font-weight:bold;width:50px;height:50px;
-                            ">✕</button>
-                        </div>
-                        <div style="height:3px;background:rgba(255,255,255,0.3);margin-top:15px;"></div>
-                    </div>
-                    <div style="padding:20px;overflow:auto;height:calc(100% - 120px);">${tasksHTML}</div>
-                </div>
-            `;
-            
-            document.body.appendChild(modal);
-            modal.addEventListener('click', (e) => e.target === modal && modal.remove());
-            updateProgress();
         }
 
-        // Инициализация
-        updateProgress();
-        tg.MainButton.setText('📊 Моя статистика').onClick(updateProgress).show();
+        // Обработчики кнопок
+        document.addEventListener('click', (e) => {
+            if (e.target.matches('button[data-category]')) {
+                const category = e.target.dataset.category;
+                const pendingCount = getPendingCount(category);
+                if (pendingCount === 0) {
+                    tg.showAlert(`🎉 "${category}" - все задания выполнены!`);
+                } else {
+                    showModal(category);
+                }
+            }
+        });
+
+        // Запуск
+        loadUserTasks();
     </script>
 </body>
 </html>
