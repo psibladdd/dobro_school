@@ -148,6 +148,48 @@ async def get_tasks(user_id: int = 123456):
             "pending_count": 25,
             "error": "demo_mode"
         }
+
+@app_api.get("/api/leaderboard")
+async def get_leaderboard(user_id: int = None):
+    """ТОП игроков + позиция текущего"""
+    conn = get_db()
+    try:
+        cursor = conn.cursor()
+        
+        # Получаем ВСЕХ игроков с их прогрессом
+        cursor.execute('SELECT id, ' + ', '.join(columns) + ' FROM tasks')
+        rows = cursor.fetchall()
+        
+        # Считаем прогресс каждого
+        players = []
+        for row in rows:
+            user_id_db = row[0]
+            done_count = sum(1 for i in range(1, len(row)) if row[i] == 1)
+            players.append({"id": user_id_db, "done_count": done_count})
+        
+        # Сортируем по убыванию выполненных задач
+        players.sort(key=lambda x: x["done_count"], reverse=True)
+        
+        # Находим позицию текущего игрока
+        my_rank = None
+        if user_id:
+            for i, player in enumerate(players):
+                if player["id"] == user_id:
+                    my_rank = i + 1
+                    break
+        
+        # ТОП-10 + позиция текущего
+        top_players = players[:10]
+        
+        return {
+            "top_players": top_players,
+            "my_rank": my_rank,
+            "total_players": len(players),
+            "players_ahead": my_rank - 1 if my_rank else len(players)
+        }
+    finally:
+        conn.close()
+
 from fastapi import FastAPI, Request, Form
 from fastapi.responses import JSONResponse
 @app_api.post("/api/tasks/complete")
@@ -184,6 +226,7 @@ async def complete_task(user_id: int = Form(...), task_id: str = Form(...)):
 
 if __name__ == "__main__":
     uvicorn.run("school_game:app_api", host="0.0.0.0", port=8000, reload=True)
+
 
 
 
