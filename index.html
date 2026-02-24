@@ -214,7 +214,6 @@
                 userId = data.user_id;
                 pendingCount = data.pending_count || 25;
                 
-                updateCategoryCounters();
                 
                 showButtons();
                 
@@ -235,13 +234,6 @@
             }
         }
 
-        function updateCategoryCounters() {
-            Object.entries(categoryToTasks).forEach(([category, taskIds]) => {
-                const doneInCategory = taskIds.filter(id => userTasks[id]).length;
-                const countEl = document.getElementById(`count-${category.toLowerCase().replace(/ /g, '-')}`);
-                if (countEl) countEl.textContent = doneInCategory;
-            });
-        }
 
         function showButtons() {
             document.getElementById('loading').style.display = 'none';
