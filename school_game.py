@@ -1,6 +1,8 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel 
+from typing import Optional
 import sqlite3
 import uvicorn
 import traceback
@@ -14,7 +16,9 @@ app_api.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
+class TaskComplete(BaseModel):
+    task_id: str
+    user_id: Optional[int] = None
 DB_PATH = './gamefication_DB.db'
 columns = ['t11','t12','t13','t14','t15','t21','t22','t23','t24','t25',
            't31','t32','t33','t34','t35','t41','t42','t43','t44','t45',
@@ -187,4 +191,5 @@ async def complete_task(task: TaskComplete):
         }
 if __name__ == "__main__":
     uvicorn.run("school_game:app_api", host="0.0.0.0", port=8000, reload=True)
+
 
