@@ -97,23 +97,23 @@
             <div class="btn_grid" id="btnGrid" style="display:none;">
                 <div class="buttons">
                     <button class="text" data-category="Дружелюбность">
-                        Дружелюбность <span id="count-дружелюбность" class="completed-badge"></span>
+                        Дружелюбность 
                     </button>
                     <button class="text" data-category="Интеллект">
-                        Интеллект <span id="count-интеллект" class="completed-badge"></span>
+                        Интеллект
                     </button>
                 </div>
                 <div class="buttons">
                     <button class="text" data-category="Активность">
-                        Активность <span id="count-активность" class="completed-badge"></span>
+                        Активность 
                     </button>
                     <button class="text" data-category="Личностный рост">
-                        Личностный рост <span id="count-личностный рост" class="completed-badge"></span>
+                        Личностный рост
                     </button>
                 </div>
             </div>
             <button id="creativeBtn" class="text" data-category="Творчество" style="display:none;">
-                Творчество <span id="count-творчество" class="completed-badge"></span>
+                Творчество
             </button>
             <span id="user-data"></span>
         </div>
@@ -204,7 +204,6 @@
                 
                 const data = await response.json();
                 console.log('✅ Данные:', data);
-                document.getElementById('done-count').textContent = doneTasks.length;
                 userTasks = data.all_tasks.reduce((acc, task) => {
                     acc[task.id] = task.done;
                     return acc;
@@ -214,7 +213,6 @@
                 userId = data.user_id;
                 pendingCount = data.pending_count || 25;
                 
-                updateCategoryCounters();
                 
                 showButtons();
                 
