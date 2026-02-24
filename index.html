@@ -334,17 +334,7 @@
             tg.openTelegramLink(`https://t.me/mary_vii?text=ШВД26_${userId}_${category}_${taskId}`);
         };
 
-        document.addEventListener('click', (e) => {
-            if (e.target.matches('button[data-category]')) {
-                const category = e.target.dataset.category;
-                const pendingCount = getPendingCount(category);
-                if (pendingCount === 0) {
-                    tg.showAlert(`🎉 "${category}" — все выполнено!`);
-                } else {
-                    showModal(category);
-                }
-            }
-        });
+        
 
         // 🚀 АВТОЗАПУСК С НАСТОЯЩИМ ID!
         loadUserTasks();
