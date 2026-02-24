@@ -23,8 +23,14 @@ def get_db():
     """Безопасное подключение к БД"""
     try:
         os.makedirs(os.path.dirname(DB_PATH) if DB_PATH else '.', exist_ok=True)
-        conn = sqlite3.connect(DB_PATH, check_same_thread=False)
-        conn.execute('PRAGMA journal_mode=WAL')
+        conn = sqlite3.connect(DB_PATH, check_same_thread=False, timeout=30.0)
+        
+        # 🔥 ОДИН PRAGMA за раз!
+        conn.execute('PRAGMA journal_mode = WAL')
+        conn.execute('PRAGMA busy_timeout = 30000')
+        conn.execute('PRAGMA synchronous = NORMAL')
+        conn.execute('PRAGMA temp_store = MEMORY')
+        
         return conn
     except Exception as e:
         print(f"❌ DB ERROR: {e}")
@@ -32,17 +38,21 @@ def get_db():
 
 
 
+
 def init_db():
-    """Инициализация БД с обработкой ошибок"""
+    """Инициализация БД"""
     try:
         conn = get_db()
         cursor = conn.cursor()
+        
+        # 🔥 ТОЛЬКО ОДИН CREATE!
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS tasks (
                 id INTEGER PRIMARY KEY,
                 ''' + ', '.join([f'{col} INTEGER DEFAULT 0' for col in columns]) + '''
             )
         ''')
+        
         # Тестовый пользователь
         cursor.execute('INSERT OR IGNORE INTO tasks (id) VALUES (123456)')
         conn.commit()
@@ -140,43 +150,41 @@ async def get_tasks(user_id: int = 123456):
         }
 from fastapi import FastAPI, Request, Form
 from fastapi.responses import JSONResponse
-
 @app_api.post("/api/tasks/complete")
-async def complete_task(request: Request):  # ← ВРЕМЕННО убираем Form
+async def complete_task(user_id: int = Form(...), task_id: str = Form(...)):
+    conn = None
     try:
-        # ЛОГИРУЕМ ВСЕ ЧТО ПРИШЛО
-        body = await request.body()
-        print(f"📥 RAW BODY: {body}")
-        print(f"📥 HEADERS: {dict(request.headers)}")
+        print(f"🎯 COMPLETE: user_id={user_id}, task_id={task_id}")
         
-        # Парсим как FormData
-        form = await request.form()
-        print(f"📋 FORM DATA: {form}")
-        
-        user_id = int(form.get('user_id') or 123456)
-        task_id = form.get('task_id') or '00'
-        
-        print(f"✅ PARSED: user_id={user_id}, task_id={task_id}")
-        
-        # ... ТВОЙ КОД БД ...
         conn = get_db()
         cursor = conn.cursor()
+        
+        # 1. Создаем пользователя
         cursor.execute('INSERT OR IGNORE INTO tasks (id) VALUES (?)', (user_id,))
+        
+        # 2. Обновляем задачу
         col_name = f't{task_id.zfill(2)}'
         if col_name in columns:
             cursor.execute(f'UPDATE tasks SET {col_name} = 1 WHERE id = ?', (user_id,))
             conn.commit()
-            conn.close()
+            
+            print(f"✅ {col_name} = 1 для user {user_id}")
             return {"status": "success", "message": f"Задача {task_id} выполнена!"}
         else:
             return {"status": "error", "message": f"Задача {task_id} не найдена"}
             
     except Exception as e:
-        print(f"💥 ERROR: {e}")
+        print(f"❌ ERROR: {e}")
+        if conn:
+            conn.rollback()
         return {"status": "error", "message": str(e)}
+    finally:
+        if conn:
+            conn.close()
 
 if __name__ == "__main__":
     uvicorn.run("school_game:app_api", host="0.0.0.0", port=8000, reload=True)
+
 
 
 
