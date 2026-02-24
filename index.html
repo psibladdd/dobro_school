@@ -90,12 +90,7 @@
             </div>
             <div id="loading" class="loading">🔄 Загружаем твои задания...</div>
             
-            <div id="stats" style="display:none; text-align:center; margin:20px 0; font-family: Archive Ukr;">
-                <div style="font-size:18px; color:#A099F6;">
-                    📊 <span id="done-count">0</span> выполнено из 25
-                </div>
-                <div id="user-id-display" class="debug"></div>
-            </div>
+
             
             <div class="btn_grid" id="btnGrid" style="display:none;">
                 <div class="buttons">
@@ -219,10 +214,8 @@
                 pendingCount = data.pending_count || 25;
                 
                 updateCategoryCounters();
-                document.getElementById('done-count').textContent = doneTasks.length;
                 
                 showButtons();
-                document.getElementById('stats').style.display = 'block';
                 
             } catch (e) {
                 console.error('💥 Ошибка:', e);
