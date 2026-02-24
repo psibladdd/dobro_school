@@ -23,14 +23,8 @@ def get_db():
     """Безопасное подключение к БД"""
     try:
         os.makedirs(os.path.dirname(DB_PATH) if DB_PATH else '.', exist_ok=True)
-        conn = sqlite3.connect(DB_PATH, check_same_thread=False, timeout=30.0)
-        
-        # 🔥 ОДИН PRAGMA за раз!
-        conn.execute('PRAGMA journal_mode = WAL')
-        conn.execute('PRAGMA busy_timeout = 30000')
-        conn.execute('PRAGMA synchronous = NORMAL')
-        conn.execute('PRAGMA temp_store = MEMORY')
-        
+        conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+        conn.execute('PRAGMA journal_mode=WAL')
         return conn
     except Exception as e:
         print(f"❌ DB ERROR: {e}")
@@ -183,6 +177,7 @@ async def complete_task(request: Request):  # ← ВРЕМЕННО убирае�
 
 if __name__ == "__main__":
     uvicorn.run("school_game:app_api", host="0.0.0.0", port=8000, reload=True)
+
 
 
 
