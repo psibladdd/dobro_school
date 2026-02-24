@@ -333,7 +333,13 @@
             tg.showAlert(`📤 Докажи куратору @mary_vii!\nЗадание: ${category} #${taskId}`);
             tg.openTelegramLink(`https://t.me/mary_vii?text=ШВД26_${userId}_${category}_${taskId}`);
         };
-
+        document.addEventListener('click', (e) => {
+            if (e.target.matches('button[data-category]')) {
+                const category = e.target.dataset.category;
+                showModal(category);
+                console.log('✅ Открываем:', category); // для дебага
+            }
+        });
         
 
         // 🚀 АВТОЗАПУСК С НАСТОЯЩИМ ID!
