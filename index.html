@@ -89,9 +89,11 @@
                 <img class="person" src="freepik__pixel-art-fulllength-child-wearing-a-unicorn-hat-o__30059 1.svg" alt="Person"/>
             </div>
             <div id="loading" class="loading">🔄 Загружаем твои задания...</div>
-            
-
-            
+                <div id="stats" style="display:none; text-align:center; margin:20px 0; font-family: Archive Ukr;">
+                    <div style="font-size:18px; color:#A099F6;">
+                        📊 <span id="done-count">0</span> выполнено из 25
+                    </div>
+                </div>
             <div class="btn_grid" id="btnGrid" style="display:none;">
                 <div class="buttons">
                     <button class="text" data-category="Дружелюбность">
@@ -202,7 +204,7 @@
                 
                 const data = await response.json();
                 console.log('✅ Данные:', data);
-                
+                document.getElementById('done-count').textContent = doneTasks.length;
                 userTasks = data.all_tasks.reduce((acc, task) => {
                     acc[task.id] = task.done;
                     return acc;
