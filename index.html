@@ -232,7 +232,6 @@
                 
                 // Демо: все задания доступны
                 userTasks = {};
-                updateCategoryCounters();
             }
         }
 
@@ -265,12 +264,7 @@
                 }
             });
 
-            if (pendingTasks.length === 0) {
-                tg.showAlert(`🎉 "${category}" — все выполнено!`);
-                return;
-            }
-
-            const modal = document.createElement('div');
+             const modal = document.createElement('div');
             modal.className = 'modal-overlay';
 
             let taskHtml = '';
