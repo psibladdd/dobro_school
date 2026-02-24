@@ -71,51 +71,31 @@ async def startup_event():
 async def root():
     return {"status": "Dobro School Game API работает!", "deploy": "Render"}
 
-@app_api.post("/api/tasks")
-async def get_tasks(request: Request):
-    print("🚀 /api/tasks вызван!")
+@app_api.get("/api/tasks")
+async def get_tasks(user_id: int = 123456):  # ?user_id=123456
+    print(f"🚀 GET /api/tasks?user_id={user_id}")
     
-    try:
-        data = await request.json()
-        init_data = data.get('initData', '')
-        print(f"📥 initData: {init_data[:50]}...")
-        
-        # Парсинг user_id (пока тестовый)
-        user_id = 123456
-        
-        conn = get_db()
-        cursor = conn.cursor()
-        
-        # Создаем пользователя
-        cursor.execute('INSERT OR IGNORE INTO tasks (id) VALUES (?)', (user_id,))
-        conn.commit()
-        
-        # ЧИТАЕМ статус заданий из БД
-        cursor.execute('SELECT * FROM tasks WHERE id = ?', (user_id,))
-        row = cursor.fetchone()
-        
-        tasks_list = []
-        if row:
-            print(f"📊 Найдена строка пользователя {user_id}")
-            for i, col in enumerate(columns):
-                done = bool(row[i + 1])  # id=0, t11=1, t12=2...
-                task_id = col.replace('t', '')
-                tasks_list.append({"id": task_id, "done": done})
-                print(f"📝 {task_id}: {done}")
-        else:
-            print("⚠️ Пользователь не найден — все задания false")
-            for col in columns:
-                tasks_list.append({"id": col.replace('t',''), "done": False})
-        
-        conn.close()
-        print(f"📤 Отправляем {len(tasks_list)} заданий")
-        return {"tasks": tasks_list, "user_id": user_id}
-        
-    except Exception as e:
-        print(f"💥 Ошибка /api/tasks: {e}")
-        # Fallback
-        tasks_list = [{"id": col.replace('t',''), "done": False} for col in columns]
-        return {"tasks": tasks_list, "user_id": 999999}
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    # Создаем пользователя
+    cursor.execute('INSERT OR IGNORE INTO tasks (id) VALUES (?)', (user_id,))
+    conn.commit()
+    
+    # ЧИТАЕМ статусы из БД
+    cursor.execute('SELECT * FROM tasks WHERE id = ?', (user_id,))
+    row = cursor.fetchone()
+    
+    tasks_list = []
+    if row:
+        for i, col in columns:
+            done = bool(row[i + 1])
+            tasks_list.append({"id": col.replace('t',''), "done": done})
+    
+    conn.close()
+    print(f"📤 {len(tasks_list)} заданий для user_id={user_id}")
+    return {"tasks": tasks_list, "user_id": user_id}
+
 
 @app_api.post("/api/complete_task")
 async def complete_task(request: Request):
@@ -143,4 +123,5 @@ async def complete_task(request: Request):
 print("🚀 school_game.py готов для Render!")
 print("📍 URL: https://dobro-school.onrender.com")
 print("🔧 Start Command: uvicorn school_game:app_api --host 0.0.0.0 --port $PORT")
+
 
