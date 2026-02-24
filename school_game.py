@@ -19,21 +19,23 @@ DB_PATH = './gamefication_DB.db'
 columns = ['t11','t12','t13','t14','t15','t21','t22','t23','t24','t25',
            't31','t32','t33','t34','t35','t41','t42','t43','t44','t45',
            't51','t52','t53','t54','t55']
-
 def get_db():
+    """Безопасное подключение к БД"""
     try:
         os.makedirs(os.path.dirname(DB_PATH) if DB_PATH else '.', exist_ok=True)
         conn = sqlite3.connect(DB_PATH, check_same_thread=False, timeout=30.0)
-        conn.execute('''
-            PRAGMA journal_mode=WAL;
-            PRAGMA busy_timeout=30000;
-            PRAGMA synchronous=NORMAL;
-            PRAGMA temp_store=MEMORY;
-        ''')
+        
+        # 🔥 ОДИН PRAGMA за раз!
+        conn.execute('PRAGMA journal_mode = WAL')
+        conn.execute('PRAGMA busy_timeout = 30000')
+        conn.execute('PRAGMA synchronous = NORMAL')
+        conn.execute('PRAGMA temp_store = MEMORY')
+        
         return conn
     except Exception as e:
         print(f"❌ DB ERROR: {e}")
         raise
+
 
 
 def init_db():
@@ -181,6 +183,7 @@ async def complete_task(request: Request):  # ← ВРЕМЕННО убирае�
 
 if __name__ == "__main__":
     uvicorn.run("school_game:app_api", host="0.0.0.0", port=8000, reload=True)
+
 
 
 
