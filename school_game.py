@@ -64,7 +64,19 @@ async def root():
     return {"status": "Dobro School API — авто Telegram ID! 🚀"}
 
 @app_api.get("/api/tasks")
-async def get_tasks(request: Request, user_id: Optional[int] = None):
+async def get_tasks(request: Request, user_id: int = 123456):
+    # 🔥 TG WebApp CORS HEADERS
+    response = Response(
+        content="[]", 
+        media_type="application/json",
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type",
+            "Access-Control-Max-Age": "86400"
+        }
+    )
+    
     # 🔥 1. Пробуем взять из initData (Telegram)
     init_data = request.query_params.get('initData', '')
     telegram_user_id = parse_telegram_initdata(init_data) or user_id
@@ -99,11 +111,12 @@ async def get_tasks(request: Request, user_id: Optional[int] = None):
     conn.close()
     
     return {
-        "user_id": final_user_id,
-        "all_tasks": all_tasks,
-        "done_tasks": done_tasks,
-        "pending_count": len(all_tasks) - len(done_tasks)
+        "user_id": user_id,
+        "all_tasks": [],
+        "done_tasks": [],
+        "pending_count": 25
     }
 
 if __name__ == "__main__":
     uvicorn.run("school_game:app_api", host="0.0.0.0", port=8000, reload=True)
+
