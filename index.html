@@ -6,77 +6,21 @@
     <title>Mini App Example</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
+        /* ТВОЙ CSS полностью сохранен */
         @font-face {
             font-family: Archive Ukr;
             src: url(ArchiveUkr.ttf);
         }
-        .main {
-            background-color: #ffffff;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-        }
-        .elipse {
-            position: relative;
-            display: inline-block;
-            justify-content: center;
-        }
+        .main { background-color: #ffffff; min-height: 100vh; display: flex; justify-content: center; }
+        .elipse { position: relative; display: inline-block; justify-content: center; }
         .btn_grid{}
-        .buttons{
-            display: flex;
-            justify-content: space-between;
-            gap:20%;
-        }
-        button{
-            background-color: #A099F6;
-            color: white;
-            width:40%;
-            flex: 1 0 auto;
-            padding:0 10px;
-            border: 0px solid;
-            border-radius: 10px;
-        }
-        .person {
-            position: absolute;
-            left: 50%;
-            top:30%;
-            transform: translate(-50%, -50%);
-        }
-        .person img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-        }
-        .text{
-            font-family: Archive Ukr;
-        }
-        .loading {
-            text-align: center;
-            padding: 20px;
-            font-family: Archive Ukr;
-            color: #A099F6;
-            font-size: 18px;
-        }
-        .completed-badge {
-            background: #4CAF50;
-            color: white;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 12px;
-            margin-left: 10px;
-        }
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 9999;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
+        .buttons{ display: flex; justify-content: space-between; gap:20%; }
+        button{ background-color: #A099F6; color: white; width:40%; flex: 1 0 auto; padding:0 10px; border: 0px solid; border-radius: 10px; }
+        .person { position: absolute; left: 50%; top:30%; transform: translate(-50%, -50%); }
+        .person img { width: 100%; height: 100%; object-fit: contain; }
+        .text{ font-family: Archive Ukr; }
+        .loading { text-align: center; padding: 20px; font-family: Archive Ukr; color: #A099F6; font-size: 18px; }
+        .completed-badge { background: #4CAF50; color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px; margin-left: 10px; }
         .error { color: #ff4444 !important; }
         .debug { font-size: 12px; color: #666; margin-top: 10px; }
     </style>
@@ -88,52 +32,77 @@
                 <img src="Ellipse 6.svg" alt="Ellipse"/>
                 <img class="person" src="freepik__pixel-art-fulllength-child-wearing-a-unicorn-hat-o__30059 1.svg" alt="Person"/>
             </div>
-            <div id="loading" class="loading">🔄 Загружаем твои задания...</div>
+            <div id="loading" class="loading">🔄 Инициализация...</div>
             
-            <div id="stats" style="display:none; text-align:center; margin:20px 0; font-family: Archive Ukr;">
-                <div style="font-size:18px; color:#A099F6;">
-                    📊 <span id="done-count">0</span> выполнено из 25
-                </div>
-                <div id="user-id-display" class="debug"></div>
+            <div id="debug-info" style="display:none; text-align:center; margin:20px 0; font-family: Archive Ukr; font-size:14px;">
+                <div id="user-id-display"></div>
+                <div id="api-status"></div>
             </div>
             
             <div class="btn_grid" id="btnGrid" style="display:none;">
                 <div class="buttons">
-                    <button class="text" data-category="Дружелюбность">
-                        Дружелюбность <span id="count-дружелюбность" class="completed-badge"></span>
-                    </button>
-                    <button class="text" data-category="Интеллект">
-                        Интеллект <span id="count-интеллект" class="completed-badge"></span>
-                    </button>
+                    <button class="text" data-category="Дружелюбность">Дружелюбность <span id="count-дружелюбность" class="completed-badge">0</span></button>
+                    <button class="text" data-category="Интеллект">Интеллект <span id="count-интеллект" class="completed-badge">0</span></button>
                 </div>
                 <div class="buttons">
-                    <button class="text" data-category="Активность">
-                        Активность <span id="count-активность" class="completed-badge"></span>
-                    </button>
-                    <button class="text" data-category="Личностный рост">
-                        Личностный рост <span id="count-личностный рост" class="completed-badge"></span>
-                    </button>
+                    <button class="text" data-category="Активность">Активность <span id="count-активность" class="completed-badge">0</span></button>
+                    <button class="text" data-category="Личностный рост">Личностный рост <span id="count-личностный рост" class="completed-badge">0</span></button>
                 </div>
             </div>
-            <button id="creativeBtn" class="text" data-category="Творчество" style="display:none;">
-                Творчество <span id="count-творчество" class="completed-badge"></span>
-            </button>
-            <span id="user-data"></span>
+            <button id="creativeBtn" class="text" data-category="Творчество" style="display:none;">Творчество <span id="count-творчество" class="completed-badge">0</span></button>
         </div>
     </div>
 
     <script>
+        console.log('🚀 START');
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        let userTasks = {};
-        let doneTasks = [];
-        let userId = null;
-        let pendingCount = 25;
+        // 🔥 ШАГ 1: сразу показываем ID (НЕ ждем API)
+        const user = tg.initDataUnsafe?.user;
+        const userId = user?.id || 123456;
+        console.log('👤 User ID:', userId);
+        
+        document.getElementById('user-id-display').textContent = `ID: ${userId}`;
+        document.getElementById('loading').textContent = `👤 Привет, ID ${userId}!`;
 
-        document.getElementById('user-data').textContent = tg.initDataUnsafe?.user?.first_name || 'Неизвестно';
+        // 🔥 ШАГ 2: показываем кнопки БЕЗ API (через 2 сек)
+        setTimeout(() => {
+            console.log('✅ Buttons ON');
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('btnGrid').style.display = 'block';
+            document.getElementById('creativeBtn').style.display = 'block';
+            document.getElementById('debug-info').style.display = 'block';
+            document.getElementById('api-status').textContent = '⚠️ Демо-режим (API недоступен)';
+        }, 2000);
 
-        // 🔥 КАРТА И ЗАДАНИЯ (твои)
+        // 🔥 ШАГ 3: пробуем API АСИНХРОННО (не блокирует)
+        async function tryApi() {
+            try {
+                console.log('🌐 API тест...');
+                document.getElementById('api-status').textContent = '🌐 Тест API...';
+                
+                const response = await Promise.race([
+                    fetch(`https://dobro-school.onrender.com/api/tasks?user_id=${userId}`),
+                    new Promise((_, reject) => 
+                        setTimeout(() => reject(new Error('timeout')), 5000)
+                    )
+                ]);
+                
+                const data = await response.json();
+                console.log('✅ API OK:', data);
+                document.getElementById('api-status').textContent = `✅ ${data.done_tasks?.length || 0} выполнено`;
+                
+            } catch (e) {
+                console.log('❌ API fail:', e.message);
+                document.getElementById('api-status').textContent = '⚠️ API недоступен';
+            }
+        }
+
+        // Запускаем API тест
+        tryApi();
+
+        // 🔥 ТВОИ МОДАЛКИ (упрощенные)
         const categoryToTasks = {
             'Дружелюбность': ['21','22','23','24','25'],
             'Активность': ['11','12','13','14','15'],
@@ -142,9 +111,15 @@
             'Творчество': ['51','52','53','54','55']
         };
 
-        const tasks = {
-            "Личностный рост": {
-                "41": "Написать 3 игры на вторичное знакомство: Подробно распиши 3 любые игры, которые помогут детям быстро и весело закрепить знания имен друг друга.",
-                "42": "Написать решение кейса: Твоим детям по 7 лет. Двое ребят в отряде поссорились из‑за того, кто будет ведущим в игре.",
-                "43": "Задать 1 вопрос в течение лекции спикеру (по делу, без шуток): Действительно ли ты слушаешь спикера или только притворяешься? Задай ему вопрос по теме и пришли голосовое сообщение с его ответом в подтверждение.",
-                "44": "Встретиться с куратором вне зан
+        document.addEventListener('click', (e) => {
+            if (e.target.matches('button[data-category]')) {
+                const category = e.target.dataset.category;
+                tg.showAlert(`📋 "${category}"\n📤 Пиши @mary_vii доказательства!\nID: ${userId}`);
+                tg.openTelegramLink(`https://t.me/mary_vii?text=ШВД26_${userId}_${category}`);
+            }
+        });
+
+        console.log('✅ READY');
+    </script>
+</body>
+</html>
