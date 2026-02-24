@@ -265,24 +265,29 @@
                 userTasks = {};
             }
         }
-        function updateHeader() {
+        async function getRealRank() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/leaderboard?user_id=${userId}`);
+                const data = await response.json();
+                return data.my_rank || data.total_players + 1; // Если не найден - последний
+            } catch {
+                return 26 - doneTasks.length; // Fallback
+            }
+        }
+        async function updateHeader() {
             const userName = tg.initDataUnsafe?.user?.first_name || 'Игрок';
             const doneCount = doneTasks.length || 0;
-            const totalCount = 25;
-            const percent = Math.round((doneCount / totalCount) * 100);
             
-            // Имя пользователя
             document.getElementById('user-name').textContent = userName;
             
-            // Рейтинг (пока заглушка, потом с сервера)
-            document.getElementById('user-rank').textContent = `#${Math.floor(Math.random() * 100 + 1)} в рейтинге`;
+            // 🔥 РЕАЛЬНЫЙ РЕЙТИНГ СЕРВЕРА!
+            const rank = await getRealRank();
+            document.getElementById('user-rank').textContent = `#${rank} в рейтинге`;
             
-            // Прогресс текст
-            document.getElementById('progress-text').textContent = `${doneCount}/${totalCount}`;
-            document.getElementById('progress-percent').textContent = `${percent}%`;
-            
-            // Анимация прогресс-бара
-            document.getElementById('progress-bar').style.width = `${percent}%`;
+            // Прогресс
+            document.getElementById('progress-text').textContent = `${doneCount}/25`;
+            document.getElementById('progress-percent').textContent = `${Math.round(doneCount/25*100)}%`;
+            document.getElementById('progress-bar').style.width = `${doneCount/25*100}%`;
         }
         function updateCategoryCounters() {
             Object.entries(categoryToTasks).forEach(([category, taskIds]) => {
