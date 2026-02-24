@@ -97,7 +97,7 @@
             <div class="btn_grid" id="btnGrid" style="display:none;">
                 <div class="buttons">
                     <button class="text" data-category="Дружелюбность">
-                        Дружелюбность 
+                        Дружелюбность
                     </button>
                     <button class="text" data-category="Интеллект">
                         Интеллект
@@ -105,10 +105,10 @@
                 </div>
                 <div class="buttons">
                     <button class="text" data-category="Активность">
-                        Активность 
+                        Активность
                     </button>
                     <button class="text" data-category="Личностный рост">
-                        Личностный рост
+                        Личностный рост <span id="count-личностный рост" class="completed-badge"></span>
                     </button>
                 </div>
             </div>
@@ -204,6 +204,7 @@
                 
                 const data = await response.json();
                 console.log('✅ Данные:', data);
+                document.getElementById('done-count').textContent = doneTasks.length;
                 userTasks = data.all_tasks.reduce((acc, task) => {
                     acc[task.id] = task.done;
                     return acc;
@@ -213,6 +214,7 @@
                 userId = data.user_id;
                 pendingCount = data.pending_count || 25;
                 
+                updateCategoryCounters();
                 
                 showButtons();
                 
