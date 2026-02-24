@@ -137,6 +137,54 @@ async def get_tasks(user_id: int = 123456):
             "pending_count": 25,
             "error": "demo_mode"
         }
-
+@app_api.post("/api/tasks/complete")
+async def complete_task(task: TaskComplete):
+    try:
+        print(f"🎯 COMPLETE: user_id={task.user_id}, task_id={task.task_id}")
+        
+        conn = None
+        try:
+            conn = get_db()
+            cursor = conn.cursor()
+            
+            # Создаем пользователя если нет
+            cursor.execute('INSERT OR IGNORE INTO tasks (id) VALUES (?)', (task.user_id or 123456,))
+            conn.commit()
+            
+            # Обновляем задачу
+            col_name = f't{task.task_id.zfill(2)}'  # "11" → "t11"
+            if col_name in columns:
+                cursor.execute(f'''
+                    UPDATE tasks SET {col_name} = 1 
+                    WHERE id = ?
+                ''', (task.user_id or 123456,))
+                conn.commit()
+                
+                affected = cursor.rowcount
+                print(f"✅ Задача {col_name} отмечена ({affected} строк)")
+                
+                return {
+                    "status": "success",
+                    "message": f"Задача {task.task_id} выполнена!",
+                    "affected_rows": affected
+                }
+            else:
+                return {
+                    "status": "error",
+                    "message": f"Неизвестная задача: {task.task_id}"
+                }
+                
+        finally:
+            if conn:
+                conn.close()
+                
+    except Exception as e:
+        print(f"❌ COMPLETE ERROR: {e}")
+        return {
+            "status": "error", 
+            "message": "Ошибка сервера",
+            "error": str(e)
+        }
 if __name__ == "__main__":
     uvicorn.run("school_game:app_api", host="0.0.0.0", port=8000, reload=True)
+
