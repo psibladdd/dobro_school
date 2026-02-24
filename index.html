@@ -316,7 +316,12 @@
                 if (e.target === modal) modal.remove();
             });
         }
-
+        document.addEventListener('click', (e) => {
+            if (e.target.matches('button[data-category]')) {
+                const category = e.target.dataset.category;
+                showModal(category);
+            }
+        });
         window.toggleTask = function(index) {
             const desc = document.getElementById(`task-desc-${index}`);
             const header = document.querySelector(`.task-header-${index}`);
