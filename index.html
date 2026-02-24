@@ -97,23 +97,23 @@
             <div class="btn_grid" id="btnGrid" style="display:none;">
                 <div class="buttons">
                     <button class="text" data-category="Дружелюбность">
-                        Дружелюбность
+                        Дружелюбность <span id="count-дружелюбность" class="completed-badge"></span>
                     </button>
                     <button class="text" data-category="Интеллект">
-                        Интеллект
+                        Интеллект <span id="count-интеллект" class="completed-badge"></span>
                     </button>
                 </div>
                 <div class="buttons">
                     <button class="text" data-category="Активность">
-                        Активность
+                        Активность <span id="count-активность" class="completed-badge"></span>
                     </button>
                     <button class="text" data-category="Личностный рост">
-                        Личностный рост
+                        Личностный рост <span id="count-личностный рост" class="completed-badge"></span>
                     </button>
                 </div>
             </div>
             <button id="creativeBtn" class="text" data-category="Творчество" style="display:none;">
-                Творчество
+                Творчество <span id="count-творчество" class="completed-badge"></span>
             </button>
             <span id="user-data"></span>
         </div>
@@ -214,6 +214,7 @@
                 userId = data.user_id;
                 pendingCount = data.pending_count || 25;
                 
+                updateCategoryCounters();
                 
                 showButtons();
                 
@@ -234,6 +235,13 @@
             }
         }
 
+        function updateCategoryCounters() {
+            Object.entries(categoryToTasks).forEach(([category, taskIds]) => {
+                const doneInCategory = taskIds.filter(id => userTasks[id]).length;
+                const countEl = document.getElementById(`count-${category.toLowerCase().replace(/ /g, '-')}`);
+                if (countEl) countEl.textContent = doneInCategory;
+            });
+        }
 
         function showButtons() {
             document.getElementById('loading').style.display = 'none';
@@ -308,12 +316,7 @@
                 if (e.target === modal) modal.remove();
             });
         }
-        document.addEventListener('click', (e) => {
-            if (e.target.matches('button[data-category]')) {
-                const category = e.target.dataset.category;
-                showModal(category);
-            }
-        });
+
         window.toggleTask = function(index) {
             const desc = document.getElementById(`task-desc-${index}`);
             const header = document.querySelector(`.task-header-${index}`);
