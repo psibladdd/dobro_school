@@ -58,7 +58,7 @@ def init_db():
     ''')
     
     # Тестовый пользователь
-    cursor.execute('INSERT OR IGNORE INTO tasks (id) VALUES (123456)', (123456,))
+    cursor.execute('INSERT OR IGNORE INTO tasks (id) VALUES (?)', (123456,))
     conn.commit()
     conn.close()
     print("✅ БД готова!")
@@ -143,3 +143,4 @@ async def complete_task(request: Request):
 print("🚀 school_game.py готов для Render!")
 print("📍 URL: https://dobro-school.onrender.com")
 print("🔧 Start Command: uvicorn school_game:app_api --host 0.0.0.0 --port $PORT")
+
