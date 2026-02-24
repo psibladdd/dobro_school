@@ -6,21 +6,77 @@
     <title>Mini App Example</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        /* ТВОЙ CSS полностью сохранен */
         @font-face {
             font-family: Archive Ukr;
             src: url(ArchiveUkr.ttf);
         }
-        .main { background-color: #ffffff; min-height: 100vh; display: flex; justify-content: center; }
-        .elipse { position: relative; display: inline-block; justify-content: center; }
+        .main {
+            background-color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+        }
+        .elipse {
+            position: relative;
+            display: inline-block;
+            justify-content: center;
+        }
         .btn_grid{}
-        .buttons{ display: flex; justify-content: space-between; gap:20%; }
-        button{ background-color: #A099F6; color: white; width:40%; flex: 1 0 auto; padding:0 10px; border: 0px solid; border-radius: 10px; }
-        .person { position: absolute; left: 50%; top:30%; transform: translate(-50%, -50%); }
-        .person img { width: 100%; height: 100%; object-fit: contain; }
-        .text{ font-family: Archive Ukr; }
-        .loading { text-align: center; padding: 20px; font-family: Archive Ukr; color: #A099F6; font-size: 18px; }
-        .completed-badge { background: #4CAF50; color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px; margin-left: 10px; }
+        .buttons{
+            display: flex;
+            justify-content: space-between;
+            gap:20%;
+        }
+        button{
+            background-color: #A099F6;
+            color: white;
+            width:40%;
+            flex: 1 0 auto;
+            padding:0 10px;
+            border: 0px solid;
+            border-radius: 10px;
+        }
+        .person {
+            position: absolute;
+            left: 50%;
+            top:30%;
+            transform: translate(-50%, -50%);
+        }
+        .person img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        .text{
+            font-family: Archive Ukr;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            font-family: Archive Ukr;
+            color: #A099F6;
+            font-size: 18px;
+        }
+        .completed-badge {
+            background: #4CAF50;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
         .error { color: #ff4444 !important; }
         .debug { font-size: 12px; color: #666; margin-top: 10px; }
     </style>
@@ -32,77 +88,52 @@
                 <img src="Ellipse 6.svg" alt="Ellipse"/>
                 <img class="person" src="freepik__pixel-art-fulllength-child-wearing-a-unicorn-hat-o__30059 1.svg" alt="Person"/>
             </div>
-            <div id="loading" class="loading">🔄 Инициализация...</div>
+            <div id="loading" class="loading">🔄 Загружаем твои задания...</div>
             
-            <div id="debug-info" style="display:none; text-align:center; margin:20px 0; font-family: Archive Ukr; font-size:14px;">
-                <div id="user-id-display"></div>
-                <div id="api-status"></div>
+            <div id="stats" style="display:none; text-align:center; margin:20px 0; font-family: Archive Ukr;">
+                <div style="font-size:18px; color:#A099F6;">
+                    📊 <span id="done-count">0</span> выполнено из 25
+                </div>
+                <div id="user-id-display" class="debug"></div>
             </div>
             
             <div class="btn_grid" id="btnGrid" style="display:none;">
                 <div class="buttons">
-                    <button class="text" data-category="Дружелюбность">Дружелюбность <span id="count-дружелюбность" class="completed-badge">0</span></button>
-                    <button class="text" data-category="Интеллект">Интеллект <span id="count-интеллект" class="completed-badge">0</span></button>
+                    <button class="text" data-category="Дружелюбность">
+                        Дружелюбность <span id="count-дружелюбность" class="completed-badge"></span>
+                    </button>
+                    <button class="text" data-category="Интеллект">
+                        Интеллект <span id="count-интеллект" class="completed-badge"></span>
+                    </button>
                 </div>
                 <div class="buttons">
-                    <button class="text" data-category="Активность">Активность <span id="count-активность" class="completed-badge">0</span></button>
-                    <button class="text" data-category="Личностный рост">Личностный рост <span id="count-личностный рост" class="completed-badge">0</span></button>
+                    <button class="text" data-category="Активность">
+                        Активность <span id="count-активность" class="completed-badge"></span>
+                    </button>
+                    <button class="text" data-category="Личностный рост">
+                        Личностный рост <span id="count-личностный рост" class="completed-badge"></span>
+                    </button>
                 </div>
             </div>
-            <button id="creativeBtn" class="text" data-category="Творчество" style="display:none;">Творчество <span id="count-творчество" class="completed-badge">0</span></button>
+            <button id="creativeBtn" class="text" data-category="Творчество" style="display:none;">
+                Творчество <span id="count-творчество" class="completed-badge"></span>
+            </button>
+            <span id="user-data"></span>
         </div>
     </div>
 
     <script>
-        console.log('🚀 START');
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // 🔥 ШАГ 1: сразу показываем ID (НЕ ждем API)
-        const user = tg.initDataUnsafe?.user;
-        const userId = user?.id || 123456;
-        console.log('👤 User ID:', userId);
-        
-        document.getElementById('user-id-display').textContent = `ID: ${userId}`;
-        document.getElementById('loading').textContent = `👤 Привет, ID ${userId}!`;
+        let userTasks = {};
+        let doneTasks = [];
+        let userId = null;
+        let pendingCount = 25;
 
-        // 🔥 ШАГ 2: показываем кнопки БЕЗ API (через 2 сек)
-        setTimeout(() => {
-            console.log('✅ Buttons ON');
-            document.getElementById('loading').style.display = 'none';
-            document.getElementById('btnGrid').style.display = 'block';
-            document.getElementById('creativeBtn').style.display = 'block';
-            document.getElementById('debug-info').style.display = 'block';
-            document.getElementById('api-status').textContent = '⚠️ Демо-режим (API недоступен)';
-        }, 2000);
+        document.getElementById('user-data').textContent = tg.initDataUnsafe?.user?.first_name || 'Неизвестно';
 
-        // 🔥 ШАГ 3: пробуем API АСИНХРОННО (не блокирует)
-        async function tryApi() {
-            try {
-                console.log('🌐 API тест...');
-                document.getElementById('api-status').textContent = '🌐 Тест API...';
-                
-                const response = await Promise.race([
-                    fetch(`https://dobro-school.onrender.com/api/tasks?user_id=${userId}`),
-                    new Promise((_, reject) => 
-                        setTimeout(() => reject(new Error('timeout')), 5000)
-                    )
-                ]);
-                
-                const data = await response.json();
-                console.log('✅ API OK:', data);
-                document.getElementById('api-status').textContent = `✅ ${data.done_tasks?.length || 0} выполнено`;
-                
-            } catch (e) {
-                console.log('❌ API fail:', e.message);
-                document.getElementById('api-status').textContent = '⚠️ API недоступен';
-            }
-        }
-
-        // Запускаем API тест
-        tryApi();
-
-        // 🔥 ТВОИ МОДАЛКИ (упрощенные)
+        // 🔥 КАРТА И ЗАДАНИЯ (твои)
         const categoryToTasks = {
             'Дружелюбность': ['21','22','23','24','25'],
             'Активность': ['11','12','13','14','15'],
@@ -111,15 +142,224 @@
             'Творчество': ['51','52','53','54','55']
         };
 
+        const tasks = {
+            "Личностный рост": {
+                "41": "Написать 3 игры на вторичное знакомство: Подробно распиши 3 любые игры, которые помогут детям быстро и весело закрепить знания имен друг друга.",
+                "42": "Написать решение кейса: Твоим детям по 7 лет. Двое ребят в отряде поссорились из‑за того, кто будет ведущим в игре.",
+                "43": "Задать 1 вопрос в течение лекции спикеру (по делу, без шуток): Действительно ли ты слушаешь спикера или только притворяешься? Задай ему вопрос по теме и пришли голосовое сообщение с его ответом в подтверждение.",
+                "44": "Встретиться с куратором вне занятия: Говорят, кураторы вас постоянно куда-то зовут. Хотим увидеть на фотографии, как круто вы проводите время.",
+                "45": "Узнать тайну одного из организаторов: У каждого из нас есть своя тайна. Хочешь ее узнать? Попробуй пообщаться с нами. В подтверждение пришли тайну текстом."
+            },
+            "Активность": {
+                "11": "Выбраться танцевать на сцену: Может быть вы с командой подготовите крутой номер, где ты будешь танцевать? А может быть спросишь у организаторов и присоединишься на зарядку? В общем, пришли видео.",
+                "12": "Провести игру с залом на занятии: Уточни у куратора, когда это можно сделать, но знай – количество возможностей ограничено. Не забудь попросить друга заснять этот момент.",
+                "13": "Подготовить мини-сюрприз для всех присутствующих на занятии: Подумай, чем ты можешь порадовать абсолютно всех присутствующих? Важное условие – это должно стоить 0 рублей. Скинь фото-подтверждение",
+                "14": "Одержать победу в одном из мероприятий, проходящих на занятии: Мы уверены, у тебя это точно получится! Сфотографируй и отправь грамоту, которую получишь за победу. (это может быть и командная победа).",
+                "15": "Записать в общую беседу 3 кружка о том, как проходит твой день: Нам действительно интересно, чем ты живешь вне занятий. Перешли эти кругляши потом сюда."
+            },
+            "Дружелюбность": {
+                "21": "Где-то прогуляться с человеком из другой команды: Время знакомиться с новыми людьми! А что может быть проще, чем прогулка? Кстати, пришли нам фото-подтверждение.",
+                "22": "Заполнить анкету лучшей подружки с одним из организаторов: Выбери любого организатора и узнай: какой у него любимый цвет; когда у него день рождения; его смешную историю из детства. Пришли нам его ответы, но знай, у него тоже должны быть твои ответы на эти вопросы.",
+                "23": "Кинуть респект улиц одному из участников твоей команды: Выбери одного из участников твоей команды, когда почувствуешь, что он ультра хорош. Отправь нам его ник в тг.",
+                "24": "Устроить перекус по цветам с любым из участников: Знаешь модные видео из тик-тока, где друзья покупают друг другу вкусняшки по цветам? Сделай также с любым из участников на перекусе, а потом вместе отправьте фото, что у вас получилось.",
+                "25": "Сделать парный костюм с любым из участников: Умение делать парные костюмы очень пригодиться на смене. Единственное отличие – сейчас ты можешь выбрать себе напарника самостоятельно. Скиньте нам свои фотки."
+            },
+            "Интеллект": {
+                "31": "Получить за выполнение первого домашнего задания более 70 баллов: Просто сделай это! Мы уверены, у тебя получится! Кстати, его можно переписывать, если не получается с первого раза...",
+                "32": "Получить за выполнение второго домашнего задания более 70 баллов: Просто сделай это! Мы уверены, у тебя получится! Кстати, его можно переписывать, если не получается с первого раза...",
+                "33": "Получить за выполнение третьего домашнего задания более 70 баллов: Просто сделай это! Мы уверены, у тебя получится! Кстати, его можно переписывать, если не получается с первого раза...",
+                "34": "Получить за выполнение четвертого домашнего задания более 70 баллов: Просто сделай это! Мы уверены, у тебя получится! Кстати, его можно переписывать, если не получается с первого раза...",
+                "35": "Получить за выполнение пятого домашнего задания более 70 баллов: Просто сделай это! Мы уверены, у тебя получится! Кстати, его можно переписывать, если не получается с первого раза..."
+            },
+            "Творчество": {
+                "51": "Снять вертикальное видео с одним из участников: Рилс? Тики-ток? ВК-клип? Что хотите, главное – пришлите нам его на оценку. Не забудь указать в описании его – #ШВД26",
+                "52": "Сделать фотографию-косплей на любой мем: Какой твою любимый мем? Давай ты закосплеишь его и пришлешь нам, а еще можно дополнительно скинуть его в общий чатикс на оценку.",
+                "53": "Придумать 2 педагогические шутки: Ты уже почти педагог. Подумай, над чем они смеются. Напиши нам текстовые 2 шутеечки, чтобы мы тоже посмеялись.",
+                "54": "Отличиться костюмом на занятии: Помни – умение делать костюм реально важное в вожатском мире. Сделай самый крутой в мире костюм, приди в нем на занятие и скинь нам фотку.",
+                "55": "Сделать тематическую аватарку и установить ее в профиль на неделю: Видел у организаторов стоят общие тематические аватарки? Ты же тоже так сможешь! Главное – присутствие надписи «ШВД'26» и скинуть ее нам, конечно же."
+            }
+        };
+
+        // 🔥 АВТО USER ID ИЗ TELEGRAM!
+        async function loadUserTasks() {
+            const loadingEl = document.getElementById('loading');
+            
+            try {
+                // Получаем реальный Telegram ID!
+                const telegramUser = tg.initDataUnsafe?.user;
+                const realUserId = telegramUser?.id || 123456;
+                
+                console.log('👤 Telegram ID:', realUserId);
+                document.getElementById('user-id-display').textContent = `ID: ${realUserId}`;
+                
+                loadingEl.textContent = `🌐 Загружаем задания для ID ${realUserId}...`;
+                
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000);
+                
+                // 🔥 Отправляем НАСТОЯЩИЙ ID!
+                const url = `https://dobro-school.onrender.com/api/tasks?user_id=${realUserId}`;
+                console.log('🌐 Запрос:', url);
+                
+                const response = await fetch(url, { signal: controller.signal });
+                clearTimeout(timeoutId);
+                
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                const data = await response.json();
+                console.log('✅ Данные:', data);
+                
+                userTasks = data.all_tasks.reduce((acc, task) => {
+                    acc[task.id] = task.done;
+                    return acc;
+                }, {}) || {};
+                
+                doneTasks = data.done_tasks || [];
+                userId = data.user_id;
+                pendingCount = data.pending_count || 25;
+                
+                updateCategoryCounters();
+                document.getElementById('done-count').textContent = doneTasks.length;
+                
+                showButtons();
+                document.getElementById('stats').style.display = 'block';
+                
+            } catch (e) {
+                console.error('💥 Ошибка:', e);
+                loadingEl.innerHTML = `
+                    ❌ Сервер недоступен (ID: ${tg.initDataUnsafe?.user?.id || '???'}).<br>
+                    <button onclick="loadUserTasks()" style="
+                        background:#4CAF50;color:white;border:none;
+                        padding:10px 20px;border-radius:10px;font-size:16px;
+                        font-family:'Archive Ukr';margin-top:10px;
+                    ">🔄 Повторить</button>
+                `;
+                loadingEl.classList.add('error');
+                
+                // Демо: все задания доступны
+                userTasks = {};
+                updateCategoryCounters();
+            }
+        }
+
+        function updateCategoryCounters() {
+            Object.entries(categoryToTasks).forEach(([category, taskIds]) => {
+                const doneInCategory = taskIds.filter(id => userTasks[id]).length;
+                const countEl = document.getElementById(`count-${category.toLowerCase().replace(/ /g, '-')}`);
+                if (countEl) countEl.textContent = doneInCategory;
+            });
+        }
+
+        function showButtons() {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('btnGrid').style.display = 'block';
+            document.getElementById('creativeBtn').style.display = 'block';
+        }
+
+        function getPendingCount(category) {
+            const taskIds = categoryToTasks[category] || [];
+            return taskIds.filter(id => !userTasks[id]).length;
+        }
+
+        function showModal(category) {
+            const pendingTasks = [];
+            const taskIds = categoryToTasks[category] || [];
+
+            taskIds.forEach(taskId => {
+                if (!userTasks[taskId] && tasks[category]?.[taskId]) {
+                    pendingTasks.push({id: taskId, text: tasks[category][taskId]});
+                }
+            });
+
+            if (pendingTasks.length === 0) {
+                tg.showAlert(`🎉 "${category}" — все выполнено!`);
+                return;
+            }
+
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+
+            let taskHtml = '';
+            pendingTasks.forEach((task, index) => {
+                taskHtml += `
+                    <div style="margin-bottom:15px;background:#fff;border-radius:10px;overflow:hidden;">
+                        <div onclick="toggleTask(${index})" style="
+                            padding:15px;cursor:pointer;background:#f8f9ff;
+                            color:#A099F6;font-weight:bold;font-size:18px;user-select:none;
+                            border-bottom:1px solid #eee;
+                        " class="task-header-${index}">
+                            ${task.text.split(':')[0]}
+                            <span style="float:right;font-size:14px;">▼</span>
+                        </div>
+                        <div id="task-desc-${index}" style="
+                            max-height:0;overflow:hidden;transition:max-height 0.3s;
+                            background:#fff;color:#666;padding:0 20px 5px;
+                        ">
+                            <div style="line-height:1.5;padding:15px 0;font-size:16px;">
+                                ${task.text}
+                            </div>
+                            <button onclick="sendToCurator('${task.id}', '${category}')" style="
+                                width:100%;padding:12px;background:#EDE8FF;color:#5F33E1;
+                                border:none;border-radius:10px;font-weight:bold;font-size:16px;
+                                font-family:'Archive Ukr';margin:10px 0;
+                            ">📤 Куратору @mary_vii</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            modal.innerHTML = `
+                <div style="background:#A099F6;border-radius:15px;width:90%;max-height:80vh;padding:20px;overflow:auto;color:#fff;font-family:'Archive Ukr';">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                        <h1 style="margin:0;font-size:24px;">${category}</h1>
+                        <button onclick="this.parentElement.parentElement.parentElement.remove()" style="
+                            padding:5px 10px;background:#fff;color:#A099F6;border:none;
+                            border-radius:20px;cursor:pointer;font-size:20px;font-weight:bold;
+                            width:40px;height:40px;display:flex;align-items:center;justify-content:center;
+                        ">×</button>
+                    </div>
+                    <div style="background:#fff;height:2px;margin-bottom:15px;"></div>
+                    ${taskHtml}
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.remove();
+            });
+        }
+
+        window.toggleTask = function(index) {
+            const desc = document.getElementById(`task-desc-${index}`);
+            const header = document.querySelector(`.task-header-${index}`);
+            if (desc.style.maxHeight === '0px' || !desc.style.maxHeight) {
+                desc.style.maxHeight = desc.scrollHeight + 'px';
+                header.querySelector('span').textContent = '▲';
+            } else {
+                desc.style.maxHeight = '0px';
+                header.querySelector('span').textContent = '▼';
+            }
+        };
+
+        window.sendToCurator = function(taskId, category) {
+            tg.showAlert(`📤 Докажи куратору @mary_vii!\nЗадание: ${category} #${taskId}`);
+            tg.openTelegramLink(`https://t.me/mary_vii?text=ШВД26_${userId}_${category}_${taskId}`);
+        };
+
         document.addEventListener('click', (e) => {
             if (e.target.matches('button[data-category]')) {
                 const category = e.target.dataset.category;
-                tg.showAlert(`📋 "${category}"\n📤 Пиши @mary_vii доказательства!\nID: ${userId}`);
-                tg.openTelegramLink(`https://t.me/mary_vii?text=ШВД26_${userId}_${category}`);
+                const pendingCount = getPendingCount(category);
+                if (pendingCount === 0) {
+                    tg.showAlert(`🎉 "${category}" — все выполнено!`);
+                } else {
+                    showModal(category);
+                }
             }
         });
 
-        console.log('✅ READY');
+        // 🚀 АВТОЗАПУСК С НАСТОЯЩИМ ID!
+        loadUserTasks();
     </script>
 </body>
 </html>
