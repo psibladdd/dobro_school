@@ -16,40 +16,31 @@
             display: flex;
             justify-content: center;
         }
-        .elipse {
-            position: relative;
-            display: inline-block;
-            justify-content: center;
-        }
-        .btn_grid{}
-        .buttons{
+        .elipse { position: relative; display: inline-block; justify-content: center; }
+        .btn_grid {}
+        .buttons {
             display: flex;
             justify-content: space-between;
-            gap:20%;
+            gap: 20%;
         }
-        button{
+        button {
             background-color: #A099F6;
             color: white;
-            width:40%;
+            width: 40%;
             flex: 1 0 auto;
-            padding:0 10px;
+            padding: 0 10px;
             border: 0px solid;
             border-radius: 10px;
+            font-family: 'Archive Ukr';
         }
         .person {
             position: absolute;
             left: 50%;
-            top:30%;
+            top: 30%;
             transform: translate(-50%, -50%);
         }
-        .person img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-        }
-        .text{
-            font-family: Archive Ukr;
-        }
+        .person img { width: 100%; height: 100%; object-fit: contain; }
+        .text { font-family: Archive Ukr; }
         .loading {
             text-align: center;
             padding: 20px;
@@ -67,10 +58,8 @@
         }
         .modal-overlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
             background: rgba(0,0,0,0.5);
             z-index: 9999;
             display: flex;
@@ -79,75 +68,56 @@
         }
         .error { color: #ff4444 !important; }
         .debug { font-size: 12px; color: #666; margin-top: 10px; }
+        #header {
+            position: fixed; 
+            top: 0; left: 0; right: 0; 
+            height: 60px; 
+            background: linear-gradient(135deg, #A099F6, #EDE8FF);
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 0 20px; 
+            z-index: 1000;
+            font-family: 'Archive Ukr';
+            box-shadow: 0 2px 10px rgba(160,153,246,0.3);
+        }
     </style>
 </head>
 <body>
-    <!-- 🔥 НОВЫЙ HEADER -->
-    <div id="header" style="
-        position: fixed; 
-        top: 0; left: 0; right: 0; 
-        height: 60px; 
-        background: linear-gradient(135deg, #A099F6, #EDE8FF);
-        display: flex; 
-        justify-content: space-between; 
-        align-items: center; 
-        padding: 0 20px; 
-        z-index: 1000;
-        font-family: 'Archive Ukr';
-        box-shadow: 0 2px 10px rgba(160,153,246,0.3);
-    ">
-        <!-- Левая часть: Имя + Рейтинг -->
+    <div id="header">
         <div id="left-info" style="color: white; font-size: 16px;">
             <div id="user-name" style="font-weight: bold; margin-bottom: 2px;">Загружаем...</div>
             <div id="user-rank" style="font-size: 14px; opacity: 0.9;">#? в рейтинге</div>
         </div>
-        
-        <!-- Правая часть: Прогресс -->
         <div id="right-progress" style="text-align: right; color: white;">
             <div id="progress-text" style="font-size: 16px; font-weight: bold;">0/25</div>
             <div id="progress-percent" style="font-size: 14px; opacity: 0.9;">0%</div>
-            <!-- Прогресс-бар -->
             <div style="width: 80px; height: 6px; background: rgba(255,255,255,0.3); border-radius: 3px; margin-top: 4px; overflow: hidden;">
                 <div id="progress-bar" style="height: 100%; background: #4CAF50; width: 0%; transition: width 0.5s ease;"></div>
             </div>
         </div>
     </div>
 
-    <!-- 🔥 ПАДДИНГ для mainApp -->
     <div style="height: 60px;"></div>
     
     <span id="user-data" style="display: none;"></span>
     
     <div id="mainApp" class="main" style="padding-top: 60px;">
         <div class="elipse">
-            <div>
-                
-                <img class="person" src="freepik__pixel-art-fulllength-child-wearing-a-unicorn-hat-o__30059 1.svg" alt="Person"/>
-            </div>
+            <img class="person" src="freepik__pixel-art-fulllength-child-wearing-a-unicorn-hat-o__30059 1.svg" alt="Person"/>
             <div id="loading" class="loading">🔄 Загружаем твои задания...</div>
 
             <div class="btn_grid" id="btnGrid" style="display:none;">
                 <div class="buttons">
-                    <button class="text" data-category="Дружелюбность">
-                        Дружелюбность 
-                    </button>
-                    <button class="text" data-category="Интеллект">
-                        Интеллект
-                    </button>
+                    <button class="text" data-category="Дружелюбность">Дружелюбность</button>
+                    <button class="text" data-category="Интеллект">Интеллект</button>
                 </div>
                 <div class="buttons">
-                    <button class="text" data-category="Активность">
-                        Активность 
-                    </button>
-                    <button class="text" data-category="Личностный рост">
-                        Личностный рост 
-                    </button>
+                    <button class="text" data-category="Активность">Активность</button>
+                    <button class="text" data-category="Личностный рост">Личностный рост</button>
                 </div>
             </div>
-            <button id="creativeBtn" class="text" data-category="Творчество" style="display:none;">
-                Творчество 
-            </button>
-            
+            <button id="creativeBtn" class="text" data-category="Творчество" style="display:none;">Творчество</button>
         </div>
     </div>
 
@@ -162,7 +132,6 @@
 
         document.getElementById('user-data').textContent = tg.initDataUnsafe?.user?.first_name || 'Неизвестно';
 
-        // 🔥 КАРТА И ЗАДАНИЯ (твои)
         const categoryToTasks = {
             'Дружелюбность': ['21','22','23','24','25'],
             'Активность': ['11','12','13','14','15'],
@@ -209,24 +178,20 @@
             }
         };
 
-        // 🔥 АВТО USER ID ИЗ TELEGRAM!
         async function loadUserTasks() {
             const loadingEl = document.getElementById('loading');
             
             try {
-                // Получаем реальный Telegram ID!
                 const telegramUser = tg.initDataUnsafe?.user;
                 const realUserId = telegramUser?.id || 123456;
                 
                 console.log('👤 Telegram ID:', realUserId);
-                
                 loadingEl.textContent = `🌐 Загружаем задания для ID ${realUserId}...`;
                 
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 10000);
                 
-                // 🔥 Отправляем НАСТОЯЩИЙ ID!
-                const url = `https://dobro-school.onrender.com/api/tasks?user_id=${realUserId}`;
+                const url = `${API_BASE_URL}/api/tasks?user_id=${realUserId}`;
                 console.log('🌐 Запрос:', url);
                 
                 const response = await fetch(url, { signal: controller.signal });
@@ -236,6 +201,7 @@
                 
                 const data = await response.json();
                 console.log('✅ Данные:', data);
+                
                 userTasks = data.all_tasks.reduce((acc, task) => {
                     acc[task.id] = task.done;
                     return acc;
@@ -245,7 +211,6 @@
                 userId = data.user_id;
                 pendingCount = data.pending_count || 25;
                 
-                updateCategoryCounters();
                 updateHeader();
                 showButtons();
                 
@@ -260,52 +225,42 @@
                     ">🔄 Повторить</button>
                 `;
                 loadingEl.classList.add('error');
-                
-                // Демо: все задания доступны
                 userTasks = {};
             }
         }
+
         async function getRealRank() {
             try {
                 const response = await fetch(`${API_BASE_URL}/api/leaderboard?user_id=${userId}`);
                 const data = await response.json();
-                return data.my_rank || data.total_players + 1; 
+                return {
+                    rank: data.my_rank || data.total_players + 1,
+                    total: data.total_players,
+                    ahead: data.players_ahead || 0
+                }; 
             } catch {
-                return 26 - doneTasks.length; // Fallback
+                return { rank: 26 - doneTasks.length, total: 25, ahead: 25 - doneTasks.length };
             }
         }
+
         async function updateHeader() {
             const userName = tg.initDataUnsafe?.user?.first_name || 'Игрок';
             const doneCount = doneTasks.length || 0;
             
             document.getElementById('user-name').textContent = userName;
             
-            // 🔥 РЕАЛЬНЫЙ РЕЙТИНГ СЕРВЕРА!
-            const rank = await getRealRank();
-            document.getElementById('user-rank').textContent = `#${rank} в рейтинге`;
+            const rankData = await getRealRank();
+            document.getElementById('user-rank').innerHTML = `#${rankData.rank}`;
             
-            // Прогресс
             document.getElementById('progress-text').textContent = `${doneCount}/25`;
             document.getElementById('progress-percent').textContent = `${Math.round(doneCount/25*100)}%`;
             document.getElementById('progress-bar').style.width = `${doneCount/25*100}%`;
-        }
-        function updateCategoryCounters() {
-            Object.entries(categoryToTasks).forEach(([category, taskIds]) => {
-                const doneInCategory = taskIds.filter(id => userTasks[id]).length;
-                const countEl = document.getElementById(`count-${category.toLowerCase().replace(/ /g, '-')}`);
-                if (countEl) countEl.textContent = doneInCategory;
-            });
         }
 
         function showButtons() {
             document.getElementById('loading').style.display = 'none';
             document.getElementById('btnGrid').style.display = 'block';
             document.getElementById('creativeBtn').style.display = 'block';
-        }
-
-        function getPendingCount(category) {
-            const taskIds = categoryToTasks[category] || [];
-            return taskIds.filter(id => !userTasks[id]).length;
         }
 
         function showModal(category) {
@@ -318,7 +273,7 @@
                 }
             });
 
-             const modal = document.createElement('div');
+            const modal = document.createElement('div');
             modal.className = 'modal-overlay';
 
             let taskHtml = '';
@@ -387,16 +342,14 @@
             tg.showAlert(`📤 Докажи куратору @mary_vii!\nЗадание: ${category} #${taskId}`);
             tg.openTelegramLink(`https://t.me/mary_vii?text=ШВД26_${userId}_${category}_${taskId}`);
         };
+
         document.addEventListener('click', (e) => {
             if (e.target.matches('button[data-category]')) {
                 const category = e.target.dataset.category;
                 showModal(category);
-                console.log('✅ Открываем:', category); // для дебага
             }
         });
-        
 
-        // 🚀 АВТОЗАПУСК С НАСТОЯЩИМ ID!
         loadUserTasks();
     </script>
 </body>
