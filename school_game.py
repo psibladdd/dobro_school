@@ -150,41 +150,54 @@ async def get_tasks(user_id: int = 123456):
         }
 @app_api.get("/api/leaderboard")
 async def get_leaderboard(user_id: int = None):
-    """ТОП игроков + позиция текущего"""
-    conn = get_db()
+    """ТОП игроков используя ТУ ЖЕ логику что и get_tasks"""
+    conn = None
     try:
+        print("🚀 GET /api/leaderboard")
+        conn = get_db()
         cursor = conn.cursor()
         
-        # 🔥 ПРАВИЛЬНЫЙ SQL!
-        columns_sql = ', '.join(columns)  # "t11,t12,t13..."
-        cursor.execute(f'SELECT id, {columns_sql} FROM tasks WHERE id IS NOT NULL')
-        rows = cursor.fetchall()
+        # 🔥 Берем ВСЕХ пользователей (как в get_tasks)
+        cursor.execute('SELECT id FROM tasks WHERE id IS NOT NULL')
+        user_ids = [row[0] for row in cursor.fetchall()]
+        print(f"📊 Найдено игроков: {len(user_ids)}")
         
-        print(f"📊 Загружено игроков: {len(rows)}")  # ДЛЯ ДЕБАГА
-        
-        # Считаем прогресс каждого
         players = []
-        for row in rows:
-            user_id_db = row[0]
-            if user_id_db is None: continue  # пропускаем NULL
+        
+        # 🔥 ДЛЯ КАЖДОГО пользователя вызываем логику get_tasks
+        for uid in user_ids:
+            cursor.execute('SELECT * FROM tasks WHERE id = ?', (uid,))
+            row = cursor.fetchone()
             
-            done_count = sum(1 for i in range(1, len(row)) if row[i] == 1)
-            players.append({"id": user_id_db, "done_count": done_count})
+            done_count = 0
+            if row:
+                for i, col in enumerate(columns):
+                    if row[i + 1] == 1:  # Точно как в get_tasks!
+                        done_count += 1
+            else:
+                done_count = 0  # Новые пользователи
+            
+            players.append({
+                "id": uid, 
+                "done_count": done_count,
+                "username": f"Игрок {uid}"  # потом заменишь на реальные имена
+            })
         
-        print(f"🎯 Игроков с данными: {len(players)}")  # ДЛЯ ДЕБАГА
-        
-        # Сортируем по убыванию
+        # 🔥 Сортируем ПО ТОМУ ЖЕ ПРИНЦИПУ
         players.sort(key=lambda x: x["done_count"], reverse=True)
         
-        # Находим позицию текущего игрока
+        # 🔥 Находим позицию ТЕКУЩЕГО игрока
         my_rank = None
-        if user_id:
+        if user_id and user_id in [p["id"] for p in players]:
             for i, player in enumerate(players):
                 if player["id"] == user_id:
                     my_rank = i + 1
                     break
-            if not my_rank:
-                my_rank = len(players) + 1  # Если не найден
+        
+        if not my_rank and user_id:
+            my_rank = len(players) + 1  # Новый игрок
+        
+        print(f"🎯 Рейтинг: {my_rank} из {len(players)}")
         
         return {
             "top_players": players[:10],
@@ -192,11 +205,14 @@ async def get_leaderboard(user_id: int = None):
             "total_players": len(players),
             "players_ahead": (my_rank - 1) if my_rank else len(players)
         }
+        
     except Exception as e:
         print(f"❌ LEADERBOARD ERROR: {e}")
-        return {"error": str(e)}
+        return {"error": str(e), "demo": True}
     finally:
-        conn.close()
+        if conn:
+            conn.close()
+
 
 
 from fastapi import FastAPI, Request, Form
@@ -235,6 +251,7 @@ async def complete_task(user_id: int = Form(...), task_id: str = Form(...)):
 
 if __name__ == "__main__":
     uvicorn.run("school_game:app_api", host="0.0.0.0", port=8000, reload=True)
+
 
 
 
