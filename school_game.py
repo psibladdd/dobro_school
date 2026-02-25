@@ -200,35 +200,28 @@ async def get_leaderboard(user_id: int = None):
         conn = get_db()
         cursor = conn.cursor()
         
-        # 🔥 Берем ИЗ КЭША (быстро!)
-        cursor.execute('''
-            SELECT id, rating, rank, username 
-            FROM leaderboard_cache 
-            ORDER BY rank ASC
-            LIMIT 10
-        ''')
-        top_players = []
-        for row in cursor.fetchall():
-            top_players.append({
-                "id": row[0], "rating": row[1], "rank": row[2], 
-                "username": row[3] or f"Игрок {row[0]}"
-            })
+        # 🔥 ЧИТАЕМ ИЗ КЭША (мгновенно!)
+        cursor.execute('SELECT id, rating, rank, username FROM leaderboard_cache ORDER BY rank ASC LIMIT 10')
+        top_players = [{"id": r[0], "rating": r[1], "rank": r[2], "username": r[3] or f"Игрок {r[0]}"} 
+                      for r in cursor.fetchall()]
         
-        # Мое место
         my_rank = None
         if user_id:
             cursor.execute('SELECT rank FROM leaderboard_cache WHERE id = ?', (user_id,))
             result = cursor.fetchone()
-            my_rank = result[0] if result else len(top_players) + 1
+            my_rank = result[0] if result else 999
+        
+        total = cursor.execute('SELECT COUNT(*) FROM leaderboard_cache').fetchone()[0]
         
         return {
             "top_players": top_players,
             "my_rank": my_rank,
-            "total_players": cursor.execute('SELECT COUNT(*) FROM leaderboard_cache').fetchone()[0],
-            "players_ahead": (my_rank - 1) if my_rank else 0
+            "total_players": total,
+            "players_ahead": (my_rank - 1) if my_rank and my_rank < 999 else total
         }
     finally:
         if conn: conn.close()
+
 
 
 
@@ -239,72 +232,61 @@ from fastapi.responses import JSONResponse
 async def complete_task(user_id: int = Form(...), task_id: str = Form(...)):
     conn = None
     try:
-        import time
         current_time = int(time.time())
-        
         conn = get_db()
         cursor = conn.cursor()
         
-        # 1. Обновляем задачу
         col_name = f't{task_id.zfill(2)}'
         if col_name not in columns:
             return {"status": "error", "message": f"Задача {task_id} не найдена"}
         
+        # Обновляем задачу
         cursor.execute('INSERT OR IGNORE INTO tasks (id) VALUES (?)', (user_id,))
-        cursor.execute(f'''
-            UPDATE tasks SET {col_name} = 1, last_updated = ? WHERE id = ?
-        ''', (current_time, user_id))
+        cursor.execute(f'UPDATE tasks SET {col_name} = 1, last_updated = ? WHERE id = ?', 
+                      (current_time, user_id))
         
-        # 2. Пересчитываем НОВЫЙ рейтинг этого игрока
+        # Пересчитываем рейтинг этого игрока
         cursor.execute('SELECT * FROM tasks WHERE id = ?', (user_id,))
         row = cursor.fetchone()
         new_rating = sum(1 for i in range(1, len(columns)+1) if row and row[i] == 1)
         
-        # 3. ДВИГАЕМ ТАБЛИЦУ РЕЙТИНГОВ!
+        # 🔥 ДВИГАЕМ РЕЙТИНГОВУЮ ТАБЛИЦУ!
         update_leaderboard_positions(conn, cursor, user_id, new_rating)
         
         conn.commit()
-        print(f"✅ Рейтинг {user_id}: {new_rating}, место обновлено!")
-        
-        return {
-            "status": "success", 
-            "message": f"Задача {task_id} выполнена! Рейтинг: {new_rating}"
-        }
+        return {"status": "success", "rating": new_rating}
         
     except Exception as e:
-        print(f"❌ ERROR: {e}")
+        print(f"❌ COMPLETE ERROR: {e}")
         if conn: conn.rollback()
         return {"status": "error", "message": str(e)}
     finally:
         if conn: conn.close()
 
 def update_leaderboard_positions(conn, cursor, changed_user_id, new_rating):
-    """Пересчитывает места ВСЕХ игроков после изменения"""
-    
-    # 1. Берем всех из кэша
+    """Обновляет места всех игроков"""
     cursor.execute('SELECT id, rating FROM leaderboard_cache')
-    players = [{"id": row[0], "rating": row[1]} for row in cursor.fetchall()]
+    players = [{"id": r[0], "rating": r[1]} for r in cursor.fetchall()]
     
-    # 2. Обновляем измененного игрока
-    for player in players:
-        if player["id"] == changed_user_id:
-            player["rating"] = new_rating
+    # Обновляем измененного
+    for p in players:
+        if p["id"] == changed_user_id:
+            p["rating"] = new_rating
             break
     
-    # 3. Сортируем заново
+    # Сортируем
     players.sort(key=lambda x: x["rating"], reverse=True)
     
-    # 4. Перезаписываем места
-    for i, player in enumerate(players):
-        cursor.execute('''
-            UPDATE leaderboard_cache 
-            SET rank = ?, rating = ? 
-            WHERE id = ?
-        ''', (i+1, player["rating"], player["id"]))
+    # Перезаписываем места
+    for i, p in enumerate(players):
+        cursor.execute('UPDATE leaderboard_cache SET rank = ?, rating = ? WHERE id = ?', 
+                      (i+1, p["rating"], p["id"]))
+
 
 
 if __name__ == "__main__":
     uvicorn.run("school_game:app_api", host="0.0.0.0", port=8000, reload=True)
+
 
 
 
