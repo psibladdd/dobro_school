@@ -170,13 +170,18 @@ async def get_leaderboard(user_id: int = None):
             cursor.execute('SELECT * FROM tasks WHERE id = ?', (uid,))
             row = cursor.fetchone()
             
-            done_count = 0
-            if row:  # Есть строка
-                # 🔥 ТОЧНО как в get_tasks: row[i + 1]
+            all_tasks = []
+            done_tasks = []
+            
+            if row:
                 for i, col in enumerate(columns):
-                    if row[i + 1] == 1:  # id=index 0, колонки=1+
-                        done_count += 1
-            # else: done_count = 0 (новый игрок)
+                    task_id = col.replace('t', '')
+                    done = bool(row[i + 1])
+                    task = {"id": task_id, "done": done}
+                    all_tasks.append(task)
+                    if done:
+                        done_tasks.append(task)
+            done_count = len(done_tasks)
             
             players.append({
                 "id": uid, 
@@ -252,6 +257,7 @@ async def complete_task(user_id: int = Form(...), task_id: str = Form(...)):
 
 if __name__ == "__main__":
     uvicorn.run("school_game:app_api", host="0.0.0.0", port=8000, reload=True)
+
 
 
 
