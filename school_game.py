@@ -150,54 +150,54 @@ async def get_tasks(user_id: int = 123456):
         }
 @app_api.get("/api/leaderboard")
 async def get_leaderboard(user_id: int = None):
-    """ТОП игроков используя ТУ ЖЕ логику что и get_tasks"""
+    """ТОП игроков - ТОЧНО как логика get_tasks"""
     conn = None
     try:
         print("🚀 GET /api/leaderboard")
         conn = get_db()
         cursor = conn.cursor()
         
-        # 🔥 Берем ВСЕХ пользователей (как в get_tasks)
+        # 🔥 1. Берем ВСЕХ пользователей
         cursor.execute('SELECT id FROM tasks WHERE id IS NOT NULL')
         user_ids = [row[0] for row in cursor.fetchall()]
         print(f"📊 Найдено игроков: {len(user_ids)}")
         
         players = []
         
-        # 🔥 ДЛЯ КАЖДОГО пользователя вызываем логику get_tasks
+        # 🔥 2. ДЛЯ КАЖДОГО считаем ТОЧНО как в get_tasks
         for uid in user_ids:
+            # ТОЧНО как в get_tasks: SELECT *
             cursor.execute('SELECT * FROM tasks WHERE id = ?', (uid,))
             row = cursor.fetchone()
             
             done_count = 0
-            if row:
+            if row:  # Есть строка
+                # 🔥 ТОЧНО как в get_tasks: row[i + 1]
                 for i, col in enumerate(columns):
-                    if row[i + 1] == 1:  # Точно как в get_tasks!
+                    if row[i + 1] == 1:  # id=index 0, колонки=1+
                         done_count += 1
-            else:
-                done_count = 0  # Новые пользователи
+            # else: done_count = 0 (новый игрок)
             
             players.append({
                 "id": uid, 
                 "done_count": done_count,
-                "username": f"Игрок {uid}"  # потом заменишь на реальные имена
+                "username": f"Игрок {uid}"
             })
         
-        # 🔥 Сортируем ПО ТОМУ ЖЕ ПРИНЦИПУ
+        # 🔥 3. Сортируем
         players.sort(key=lambda x: x["done_count"], reverse=True)
         
-        # 🔥 Находим позицию ТЕКУЩЕГО игрока
+        # 🔥 4. Находим ТЕБЯ
         my_rank = None
-        if user_id and user_id in [p["id"] for p in players]:
+        if user_id:
             for i, player in enumerate(players):
                 if player["id"] == user_id:
                     my_rank = i + 1
                     break
+            if not my_rank:
+                my_rank = len(players) + 1
         
-        if not my_rank and user_id:
-            my_rank = len(players) + 1  # Новый игрок
-        
-        print(f"🎯 Рейтинг: {my_rank} из {len(players)}")
+        print(f"🎯 Топ: {players[0]['done_count']}, Ты: #{my_rank}")
         
         return {
             "top_players": players[:10],
@@ -208,10 +208,11 @@ async def get_leaderboard(user_id: int = None):
         
     except Exception as e:
         print(f"❌ LEADERBOARD ERROR: {e}")
-        return {"error": str(e), "demo": True}
+        return {"error": str(e)}
     finally:
         if conn:
             conn.close()
+
 
 
 
@@ -251,6 +252,7 @@ async def complete_task(user_id: int = Form(...), task_id: str = Form(...)):
 
 if __name__ == "__main__":
     uvicorn.run("school_game:app_api", host="0.0.0.0", port=8000, reload=True)
+
 
 
 
