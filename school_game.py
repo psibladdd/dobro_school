@@ -35,65 +35,32 @@ def get_db():
     except Exception as e:
         print(f"❌ DB ERROR: {e}")
         raise
-import time  # ← ДОБАВЬ импорт time в начало файла!
+
+
+
 
 def init_db():
-    """Только tasks таблица"""
+    """Инициализация БД"""
     try:
         conn = get_db()
         cursor = conn.cursor()
         
-        # Проверяем last_updated
-        cursor.execute("PRAGMA table_info(tasks)")
-        if 'last_updated' not in [row[1] for row in cursor.fetchall()]:
-            cursor.execute('ALTER TABLE tasks ADD COLUMN last_updated INTEGER DEFAULT 0')
-            print("✅ last_updated добавлена")
-        
-        # Основная таблица
+        # 🔥 ТОЛЬКО ОДИН CREATE!
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS tasks (
                 id INTEGER PRIMARY KEY,
-                ''' + ', '.join([f'{col} INTEGER DEFAULT 0' for col in columns]) + ''',
-                last_updated INTEGER DEFAULT 0
+                ''' + ', '.join([f'{col} INTEGER DEFAULT 0' for col in columns]) + '''
             )
         ''')
         
+        # Тестовый пользователь
         cursor.execute('INSERT OR IGNORE INTO tasks (id) VALUES (123456)')
         conn.commit()
-        print("✅ DB готова!")
+        print("✅ DB OK")
         conn.close()
     except Exception as e:
-        print(f"❌ INIT ERROR: {e}")
-
-
-def recalculate_leaderboard_cache(conn, cursor):
-    """Пересчитывает кэш для всех игроков"""
-    try:
-        print("🔄 Пересчет кэша...")
-        
-        # Берем всех игроков
-        cursor.execute('SELECT id FROM tasks WHERE id IS NOT NULL')
-        user_ids = [row[0] for row in cursor.fetchall()]
-        
-        players = []
-        for uid in user_ids:
-            cursor.execute('SELECT * FROM tasks WHERE id = ?', (uid,))
-            row = cursor.fetchone()
-            done_count = sum(1 for i in range(1, len(columns)+1) if row and row[i] == 1)
-            players.append({"id": uid, "rating": done_count})
-        
-        # Сортируем и записываем места
-        players.sort(key=lambda x: x["rating"], reverse=True)
-        for i, player in enumerate(players):
-            cursor.execute('''
-                INSERT OR REPLACE INTO leaderboard_cache (id, rating, rank, last_updated)
-                VALUES (?, ?, ?, ?)
-            ''', (player["id"], player["rating"], i+1, int(time.time())))
-        
-        print(f"✅ Кэш: {len(players)} игроков")
-    except Exception as e:
-        print(f"❌ Кэш ошибка: {e}")
-
+        print(f"❌ INIT DB ERROR: {e}")
+        raise
 
 # 🔥 ГЛОБАЛЬНАЯ обработка ошибок 500
 @app_api.exception_handler(500)
@@ -183,41 +150,49 @@ async def get_tasks(user_id: int = 123456):
         }
 @app_api.get("/api/leaderboard")
 async def get_leaderboard(user_id: int = None):
-    """ТОП игроков - просто и без кэша"""
+    """ТОП игроков - ТОЧНО как логика get_tasks"""
     conn = None
     try:
         print("🚀 GET /api/leaderboard")
         conn = get_db()
         cursor = conn.cursor()
         
-        # 🔥 Берем ВСЕХ игроков
+        # 🔥 1. Берем ВСЕХ пользователей
         cursor.execute('SELECT id FROM tasks WHERE id IS NOT NULL')
         user_ids = [row[0] for row in cursor.fetchall()]
         print(f"📊 Найдено игроков: {len(user_ids)}")
         
         players = []
         
-        # 🔥 Считаем задания для каждого (как в get_tasks)
+        # 🔥 2. ДЛЯ КАЖДОГО считаем ТОЧНО как в get_tasks
         for uid in user_ids:
+            # ТОЧНО как в get_tasks: SELECT *
             cursor.execute('SELECT * FROM tasks WHERE id = ?', (uid,))
             row = cursor.fetchone()
             
-            done_count = 0
+            all_tasks = []
+            done_tasks = []
+            
             if row:
                 for i, col in enumerate(columns):
-                    if row[i + 1] == 1:  # id=0, колонки с 1
-                        done_count += 1
+                    task_id = col.replace('t', '')
+                    done = bool(row[i + 1])
+                    task = {"id": task_id, "done": done}
+                    all_tasks.append(task)
+                    if done:
+                        done_tasks.append(task)
+            done_count = len(done_tasks)
             
             players.append({
-                "id": uid,
-                "rating": done_count,
+                "id": uid, 
+                "done_count": done_count,
                 "username": f"Игрок {uid}"
             })
         
-        # 🔥 Сортируем
-        players.sort(key=lambda x: x["rating"], reverse=True)
+        # 🔥 3. Сортируем
+        players.sort(key=lambda x: x["done_count"], reverse=True)
         
-        # 🔥 Находим ТЕБЯ
+        # 🔥 4. Находим ТЕБЯ
         my_rank = None
         if user_id:
             for i, player in enumerate(players):
@@ -227,7 +202,7 @@ async def get_leaderboard(user_id: int = None):
             if not my_rank:
                 my_rank = len(players) + 1
         
-        print(f"🎯 Топ: {players[0]['rating'] if players else 0}, Ты: #{my_rank}")
+        print(f"🎯 Топ: {players[0]['done_count']}, Ты: #{my_rank}")
         
         return {
             "top_players": players[:10],
@@ -238,10 +213,12 @@ async def get_leaderboard(user_id: int = None):
         
     except Exception as e:
         print(f"❌ LEADERBOARD ERROR: {e}")
-        return {"error": "Серверная ошибка", "fallback": True}
+        return {"error": str(e)}
     finally:
         if conn:
             conn.close()
+
+
 
 
 from fastapi import FastAPI, Request, Form
@@ -250,67 +227,36 @@ from fastapi.responses import JSONResponse
 async def complete_task(user_id: int = Form(...), task_id: str = Form(...)):
     conn = None
     try:
-        import time
-        current_time = int(time.time())
+        print(f"🎯 COMPLETE: user_id={user_id}, task_id={task_id}")
         
-        print(f"🎯 COMPLETE: {user_id}, {task_id}")
         conn = get_db()
         cursor = conn.cursor()
         
-        col_name = f't{task_id.zfill(2)}'
-        if col_name not in columns:
-            return {"status": "error", "message": f"Задача {task_id} не найдена"}
-        
-        # Обновляем задачу
+        # 1. Создаем пользователя
         cursor.execute('INSERT OR IGNORE INTO tasks (id) VALUES (?)', (user_id,))
-        cursor.execute(f'UPDATE tasks SET {col_name} = 1, last_updated = ? WHERE id = ?', 
-                      (current_time, user_id))
-        conn.commit()
         
-        print(f"✅ {col_name} выполнена!")
-        return {"status": "success", "message": f"Задача {task_id} выполнена!"}
-        
+        # 2. Обновляем задачу
+        col_name = f't{task_id.zfill(2)}'
+        if col_name in columns:
+            cursor.execute(f'UPDATE tasks SET {col_name} = 1 WHERE id = ?', (user_id,))
+            conn.commit()
+            
+            print(f"✅ {col_name} = 1 для user {user_id}")
+            return {"status": "success", "message": f"Задача {task_id} выполнена!"}
+        else:
+            return {"status": "error", "message": f"Задача {task_id} не найдена"}
+            
     except Exception as e:
-        print(f"❌ COMPLETE ERROR: {e}")
+        print(f"❌ ERROR: {e}")
         if conn:
             conn.rollback()
-        return {"status": "error", "message": str(e)[:100]}
+        return {"status": "error", "message": str(e)}
     finally:
         if conn:
             conn.close()
 
-
-
-def update_leaderboard_positions(conn, cursor, changed_user_id, new_rating):
-    """Обновляет места всех игроков"""
-    cursor.execute('SELECT id, rating FROM leaderboard_cache')
-    players = [{"id": r[0], "rating": r[1]} for r in cursor.fetchall()]
-    
-    # Обновляем измененного
-    for p in players:
-        if p["id"] == changed_user_id:
-            p["rating"] = new_rating
-            break
-    
-    # Сортируем
-    players.sort(key=lambda x: x["rating"], reverse=True)
-    
-    # Перезаписываем места
-    for i, p in enumerate(players):
-        cursor.execute('UPDATE leaderboard_cache SET rank = ?, rating = ? WHERE id = ?', 
-                      (i+1, p["rating"], p["id"]))
-
-
-
 if __name__ == "__main__":
     uvicorn.run("school_game:app_api", host="0.0.0.0", port=8000, reload=True)
-
-
-
-
-
-
-
 
 
 
