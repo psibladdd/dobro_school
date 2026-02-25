@@ -36,12 +36,21 @@ def get_db():
         print(f"❌ DB ERROR: {e}")
         raise
 def init_db():
-    """Инициализация БД + leaderboard_cache"""
+    """Инициализация БД + добавляем last_updated"""
     try:
         conn = get_db()
         cursor = conn.cursor()
         
-        # Таблица tasks (если нет)
+        # 🔥 ПРОВЕРЯЕМ и ДОБАВЛЯЕМ last_updated если нет
+        cursor.execute("PRAGMA table_info(tasks)")
+        columns_info = [row[1] for row in cursor.fetchall()]
+        
+        if 'last_updated' not in columns_info:
+            print("🔧 Добавляем колонку last_updated...")
+            cursor.execute('ALTER TABLE tasks ADD COLUMN last_updated INTEGER DEFAULT 0')
+            print("✅ last_updated добавлена!")
+        
+        # Основная таблица tasks (если нет вообще)
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS tasks (
                 id INTEGER PRIMARY KEY,
@@ -50,26 +59,15 @@ def init_db():
             )
         ''')
         
-        # 🔥 ТАБЛИЦА КЭША РЕЙТИНГОВ!
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS leaderboard_cache (
-                id INTEGER PRIMARY KEY,
-                rating INTEGER DEFAULT 0,
-                rank INTEGER DEFAULT 0,
-                last_updated INTEGER DEFAULT 0,
-                username TEXT DEFAULT ''
-            )
-        ''')
-        
-        # При старте пересчитываем КЭШ один раз!
-        recalculate_leaderboard_cache(conn, cursor)
-        
+        # Тестовый пользователь
+        cursor.execute('INSERT OR IGNORE INTO tasks (id) VALUES (123456)')
         conn.commit()
-        print("✅ DB + КЭШ рейтингов готов!")
+        print("✅ DB OK")
         conn.close()
     except Exception as e:
         print(f"❌ INIT DB ERROR: {e}")
         raise
+
 
 def recalculate_leaderboard_cache(conn, cursor):
     """Пересчитывает кэш рейтингов для ВСЕХ игроков"""
@@ -296,6 +294,7 @@ def update_leaderboard_positions(conn, cursor, changed_user_id, new_rating):
 
 if __name__ == "__main__":
     uvicorn.run("school_game:app_api", host="0.0.0.0", port=8000, reload=True)
+
 
 
 
