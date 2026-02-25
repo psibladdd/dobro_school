@@ -232,7 +232,10 @@ from fastapi.responses import JSONResponse
 async def complete_task(user_id: int = Form(...), task_id: str = Form(...)):
     conn = None
     try:
+        import time
         current_time = int(time.time())
+        
+        print(f"🎯 COMPLETE: user_id={user_id}, task_id={task_id}")
         conn = get_db()
         cursor = conn.cursor()
         
@@ -242,26 +245,36 @@ async def complete_task(user_id: int = Form(...), task_id: str = Form(...)):
         
         # Обновляем задачу
         cursor.execute('INSERT OR IGNORE INTO tasks (id) VALUES (?)', (user_id,))
-        cursor.execute(f'UPDATE tasks SET {col_name} = 1, last_updated = ? WHERE id = ?', 
-                      (current_time, user_id))
+        cursor.execute(f'''
+            UPDATE tasks 
+            SET {col_name} = 1, last_updated = ? 
+            WHERE id = ?
+        ''', (current_time, user_id))
         
-        # Пересчитываем рейтинг этого игрока
+        # Пересчитываем рейтинг
         cursor.execute('SELECT * FROM tasks WHERE id = ?', (user_id,))
         row = cursor.fetchone()
         new_rating = sum(1 for i in range(1, len(columns)+1) if row and row[i] == 1)
         
-        # 🔥 ДВИГАЕМ РЕЙТИНГОВУЮ ТАБЛИЦУ!
-        update_leaderboard_positions(conn, cursor, user_id, new_rating)
+        # Обновляем кэш рейтингов
+        if 'leaderboard_cache' in [t[1] for t in get_db().execute("PRAGMA table_info(leaderboard_cache)").fetchall()]:
+            update_leaderboard_positions(conn, cursor, user_id, new_rating)
         
         conn.commit()
-        return {"status": "success", "rating": new_rating}
+        print(f"✅ Задача {task_id} выполнена! Рейтинг: {new_rating}")
+        
+        return {"status": "success", "message": f"Задача {task_id} выполнена! Рейтинг: {new_rating}"}
         
     except Exception as e:
         print(f"❌ COMPLETE ERROR: {e}")
-        if conn: conn.rollback()
-        return {"status": "error", "message": str(e)}
+        print(f"TRACEBACK: {traceback.format_exc()}")
+        if conn:
+            conn.rollback()
+        return {"status": "error", "message": f"Ошибка сервера: {str(e)[:50]}"}
     finally:
-        if conn: conn.close()
+        if conn:
+            conn.close()
+
 
 def update_leaderboard_positions(conn, cursor, changed_user_id, new_rating):
     """Обновляет места всех игроков"""
@@ -286,6 +299,7 @@ def update_leaderboard_positions(conn, cursor, changed_user_id, new_rating):
 
 if __name__ == "__main__":
     uvicorn.run("school_game:app_api", host="0.0.0.0", port=8000, reload=True)
+
 
 
 
