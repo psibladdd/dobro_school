@@ -16,37 +16,73 @@
             display: flex;
             justify-content: center;
         }
-        .elipse { position: relative; display: inline-block; justify-content: center; }
-        .btn_grid {}
-        .buttons {
+        .elipse {
+            position: relative;
+            display: inline-block;
+            justify-content: center;
+            width: 40%;
+            height: 100vh;
+        }
+        .btn_grid {
+            position: absolute;
+            bottom: 20%; /* Поднимаем чуть выше центра */
+            left: 0;
+            right: 0;
+            width: 100%; /* От края до края elipse */
             display: flex;
-            justify-content: space-between;
-            gap: 20%;
+            flex-direction: column;
+            gap: 12px; /* Расстояние между парами кнопок */
+            padding: 0 8%;
+        }
+        .buttons, .buttons2 {
+            display: flex;
+            justify-content: space-between; /* Кнопки растягиваются от края до края */
+            gap: 36px; /* Расстояние между кнопками в паре */
+            width: 100%;
         }
         button {
+            padding: 12px 8px; /* Больше padding для красоты */
             background-color: #A099F6;
             color: white;
-            width: 40%;
-            flex: 1 0 auto;
-            padding: 0 10px;
+            flex: 1; /* Занимают равное пространство */
             border: 0px solid;
-            border-radius: 10px;
+            border-radius: 12px;
             font-family: 'Archive Ukr';
+            font-size: 16px;
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(160,153,246,0.3);
+            transition: all 0.2s ease;
+        }
+        button:hover, button:active {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(160,153,246,0.4);
         }
         .person {
             position: absolute;
             left: 50%;
             top: 30%;
             transform: translate(-50%, -50%);
+            width: 70%; /* Чуть меньше чтобы кнопки были видны */
+            height: 60vh;
+            z-index: 1;
         }
-        .person img { width: 100%; height: 100%; object-fit: contain; }
+        .person img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
         .text { font-family: Archive Ukr; }
         .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             text-align: center;
             padding: 20px;
             font-family: Archive Ukr;
             color: #A099F6;
             font-size: 18px;
+            z-index: 10;
         }
         .completed-badge {
             background: #4CAF50;
@@ -69,14 +105,14 @@
         .error { color: #ff4444 !important; }
         .debug { font-size: 12px; color: #666; margin-top: 10px; }
         #header {
-            position: fixed; 
-            top: 0; left: 0; right: 0; 
-            height: 60px; 
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            height: 60px;
             background: linear-gradient(135deg, #A099F6, #EDE8FF);
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            padding: 0 20px; 
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
             z-index: 1000;
             font-family: 'Archive Ukr';
             box-shadow: 0 2px 10px rgba(160,153,246,0.3);
@@ -99,28 +135,31 @@
     </div>
 
     <div style="height: 60px;"></div>
-    
+
     <span id="user-data" style="display: none;"></span>
-    
+
     <div id="mainApp" class="main" style="padding-top: 60px;">
         <div class="elipse">
             <img class="person" src="freepik__pixel-art-fulllength-child-wearing-a-unicorn-hat-o__30059 1.svg" alt="Person"/>
             <div id="loading" class="loading">🔄 Загружаем твои задания...</div>
 
             <div class="btn_grid" id="btnGrid" style="display:none;">
+                <!-- Первая пара кнопок -->
                 <div class="buttons">
-                    <button class="text" data-category="Дружелюбность">Дружелюбность</button>
-                    <button class="text" data-category="Интеллект">Интеллект</button>
+                    <button class="text" data-category="Дружелюбность">🤝 Дружелюбность</button>
+                    <button class="text" data-category="Интеллект">🧠 Интеллект</button>
                 </div>
-                <div class="buttons">
-                    <button class="text" data-category="Активность">Активность</button>
-                    <button class="text" data-category="Личностный рост">Личностный рост</button>
+                <!-- Вторая пара кнопок -->
+                <div class="buttons2">
+                    <button class="text" data-category="Активность">🏃‍♀️ Активность</button>
+                    <button class="text" data-category="Личностный рост">🌱 Личностный рост</button>
                 </div>
             </div>
-            <button id="creativeBtn" class="text" data-category="Творчество" style="display:none;">Творчество</button>
+            <button id="creativeBtn" class="text" data-category="Творчество" style="display:none;">🎨 Творчество</button>
         </div>
     </div>
 
+    <!-- Остальной JavaScript остается без изменений -->
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
@@ -187,40 +226,38 @@
 
         async function loadUserTasks() {
             const loadingEl = document.getElementById('loading');
-            
             try {
                 const telegramUser = tg.initDataUnsafe?.user;
                 const realUserId = telegramUser?.id || 123456;
-                
                 console.log('👤 Telegram ID:', realUserId);
                 loadingEl.textContent = `🌐 Загружаем задания для ID ${realUserId}...`;
-                
+
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 10000);
-                
+
                 const url = `${API_BASE_URL}/api/tasks?user_id=${realUserId}`;
                 console.log('🌐 Запрос:', url);
-                
+
                 const response = await fetch(url, { signal: controller.signal });
                 clearTimeout(timeoutId);
-                
+
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                
+
                 const data = await response.json();
                 console.log('✅ Данные:', data);
-                
+
                 userTasks = data.all_tasks.reduce((acc, task) => {
                     acc[task.id] = task.done;
                     return acc;
                 }, {}) || {};
-                
+
                 doneTasks = data.done_tasks || [];
                 userId = data.user_id;
                 pendingCount = data.pending_count || 25;
-                
+
                 updateHeader();
                 showButtons();
-                
+
             } catch (e) {
                 console.error('💥 Ошибка:', e);
                 loadingEl.innerHTML = `
@@ -244,7 +281,7 @@
                     rank: data.my_rank || data.total_players + 1,
                     total: data.total_players,
                     ahead: data.players_ahead || 0
-                }; 
+                };
             } catch {
                 return { rank: 26 - doneTasks.length, total: 25, ahead: 25 - doneTasks.length };
             }
@@ -253,12 +290,12 @@
         async function updateHeader() {
             const userName = tg.initDataUnsafe?.user?.first_name || 'Игрок';
             const doneCount = doneTasks.length || 0;
-            
+
             document.getElementById('user-name').textContent = userName;
-            
+
             const rankData = await getRealRank();
             document.getElementById('user-rank').innerHTML = `#${rankData.rank}`;
-            
+
             document.getElementById('progress-text').textContent = `${doneCount}/25`;
             document.getElementById('progress-percent').textContent = `${Math.round(doneCount/25*100)}%`;
             document.getElementById('progress-bar').style.width = `${doneCount/25*100}%`;
@@ -266,7 +303,7 @@
 
         function showButtons() {
             document.getElementById('loading').style.display = 'none';
-            document.getElementById('btnGrid').style.display = 'block';
+            document.getElementById('btnGrid').style.display = 'flex';
             document.getElementById('creativeBtn').style.display = 'block';
         }
 
