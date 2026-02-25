@@ -154,7 +154,7 @@
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
-
+        const API_BASE_URL = 'https://dobro-school.onrender.com';
         let userTasks = {};
         let doneTasks = [];
         let userId = null;
@@ -269,7 +269,7 @@
             try {
                 const response = await fetch(`${API_BASE_URL}/api/leaderboard?user_id=${userId}`);
                 const data = await response.json();
-                return data.my_rank || data.total_players + 1; // Если не найден - последний
+                return data.my_rank || data.total_players + 1; 
             } catch {
                 return 26 - doneTasks.length; // Fallback
             }
