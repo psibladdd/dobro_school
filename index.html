@@ -45,8 +45,9 @@
         }
         .person {
             position: absolute;
-            left: 45%;
+            left: 50%;
             top: 10%;
+            z-index:-1;
             transform: translate(-50%, -50%);
         }
         .person img { width: 100%; height: 100%; object-fit: contain; }
@@ -75,6 +76,9 @@
             display: flex;
             justify-content: center;
             align-items: center;
+        }
+        .grad{
+            top:60%;
         }
         .error { color: #ff4444 !important; }
         .debug { font-size: 12px; color: #666; margin-top: 10px; }
@@ -128,7 +132,9 @@
                 </div>
             </div>
             <button id="creativeBtn" class="text" data-category="Творчество" style="display:none; margin:0 26%">Творчество</button>
+            <img class="person grad" src="Group%2028.png" alt="123">
         </div>
+
     </div>
 
     <script>
