@@ -16,73 +16,47 @@
             display: flex;
             justify-content: center;
         }
-        .elipse {
-            position: relative;
-            display: inline-block;
-            justify-content: center;
-            width: 40%;
-            height: 100vh;
-        }
+        .elipse { position: relative; display: inline-block; justify-content: center; width:40% }
         .btn_grid {
-            position: absolute;
-            bottom: 20%; /* Поднимаем чуть выше центра */
-            left: 0;
-            right: 0;
-            width: 100%; /* От края до края elipse */
             display: flex;
-            flex-direction: column;
-            gap: 12px; /* Расстояние между парами кнопок */
-            padding: 0 8%;
+            justify-content: space-between;
+            margin-top:25%;
+            gap:25%;
         }
-        .buttons, .buttons2 {
-            display: flex;
-            justify-content: space-between; /* Кнопки растягиваются от края до края */
-            gap: 36px; /* Расстояние между кнопками в паре */
-            width: 100%;
+        .buttons {
+
+        }
+        .buttons2 {
+
         }
         button {
-            padding: 12px 8px; /* Больше padding для красоты */
+            z-index: 10000;
+            flex:1;
+            padding:5px 5px;
             background-color: #A099F6;
             color: white;
-            flex: 1; /* Занимают равное пространство */
+            margin:2%;
+            width: 43%;
+
+            flex: 1 0 auto;
             border: 0px solid;
-            border-radius: 12px;
+            border-radius: 10px;
             font-family: 'Archive Ukr';
-            font-size: 16px;
-            font-weight: 500;
-            box-shadow: 0 4px 12px rgba(160,153,246,0.3);
-            transition: all 0.2s ease;
-        }
-        button:hover, button:active {
-            transform: translateY(-1px);
-            box-shadow: 0 6px 16px rgba(160,153,246,0.4);
         }
         .person {
             position: absolute;
-            left: 50%;
-            top: 30%;
+            left: 45%;
+            top: 10%;
             transform: translate(-50%, -50%);
-            width: 70%; /* Чуть меньше чтобы кнопки были видны */
-            height: 60vh;
-            z-index: 1;
         }
-        .person img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-        }
+        .person img { width: 100%; height: 100%; object-fit: contain; }
         .text { font-family: Archive Ukr; }
         .loading {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
             text-align: center;
             padding: 20px;
             font-family: Archive Ukr;
             color: #A099F6;
             font-size: 18px;
-            z-index: 10;
         }
         .completed-badge {
             background: #4CAF50;
@@ -144,22 +118,19 @@
             <div id="loading" class="loading">🔄 Загружаем твои задания...</div>
 
             <div class="btn_grid" id="btnGrid" style="display:none;">
-                <!-- Первая пара кнопок -->
                 <div class="buttons">
-                    <button class="text" data-category="Дружелюбность">🤝 Дружелюбность</button>
-                    <button class="text" data-category="Интеллект">🧠 Интеллект</button>
+                    <button class="text" data-category="Дружелюбность">Дружелюбность</button>
+                    <button class="text" data-category="Интеллект">Интеллект</button>
                 </div>
-                <!-- Вторая пара кнопок -->
-                <div class="buttons2">
-                    <button class="text" data-category="Активность">🏃‍♀️ Активность</button>
-                    <button class="text" data-category="Личностный рост">🌱 Личностный рост</button>
+                <div class="buttons">
+                    <button class="text" data-category="Активность">Активность</button>
+                    <button class="text" data-category="Личностный рост">Личностный рост</button>
                 </div>
             </div>
-            <button id="creativeBtn" class="text" data-category="Творчество" style="display:none;">🎨 Творчество</button>
+            <button id="creativeBtn" class="text" data-category="Творчество" style="display:none;">Творчество</button>
         </div>
     </div>
 
-    <!-- Остальной JavaScript остается без изменений -->
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
@@ -226,9 +197,11 @@
 
         async function loadUserTasks() {
             const loadingEl = document.getElementById('loading');
+
             try {
                 const telegramUser = tg.initDataUnsafe?.user;
                 const realUserId = telegramUser?.id || 123456;
+
                 console.log('👤 Telegram ID:', realUserId);
                 loadingEl.textContent = `🌐 Загружаем задания для ID ${realUserId}...`;
 
@@ -303,7 +276,7 @@
 
         function showButtons() {
             document.getElementById('loading').style.display = 'none';
-            document.getElementById('btnGrid').style.display = 'flex';
+            document.getElementById('btnGrid').style.display = 'block';
             document.getElementById('creativeBtn').style.display = 'block';
         }
 
