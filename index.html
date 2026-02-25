@@ -139,6 +139,13 @@
             'Личностный рост': ['41','42','43','44','45'],
             'Творчество': ['51','52','53','54','55']
         };
+        const categoryToKurator = {
+            'Дружелюбность': 'youmiiss',
+            'Активность': 'ghqwdfty',
+            'Интеллект': 'kot2601',
+            'Личностный рост': 'nata4aa',
+            'Творчество': 'skiirl'
+        };
 
         const tasks = {
             "Личностный рост": {
@@ -299,7 +306,7 @@
                                 width:100%;padding:12px;background:#EDE8FF;color:#5F33E1;
                                 border:none;border-radius:10px;font-weight:bold;font-size:16px;
                                 font-family:'Archive Ukr';margin:10px 0;
-                            ">📤 Куратору @mary_vii</button>
+                            ">Отправить на проверку</button>
                         </div>
                     </div>
                 `;
@@ -339,8 +346,7 @@
         };
 
         window.sendToCurator = function(taskId, category) {
-            tg.showAlert(`📤 Докажи куратору @mary_vii!\nЗадание: ${category} #${taskId}`);
-            tg.openTelegramLink(`https://t.me/mary_vii?text=ШВД26_${userId}_${category}_${taskId}`);
+            tg.openTelegramLink(`https://t.me/${categoryToKurator[category]}?text=ШВД26_${userId}_${category}_${taskId}`);
         };
 
         document.addEventListener('click', (e) => {
