@@ -35,66 +35,77 @@ def get_db():
     except Exception as e:
         print(f"❌ DB ERROR: {e}")
         raise
+import time  # ← ДОБАВЬ импорт time в начало файла!
+
 def init_db():
-    """Инициализация БД + добавляем last_updated"""
+    """Инициализация БД + leaderboard_cache"""
     try:
         conn = get_db()
         cursor = conn.cursor()
         
-        # 🔥 ПРОВЕРЯЕМ и ДОБАВЛЯЕМ last_updated если нет
+        # 🔥 1. Проверяем и добавляем last_updated в tasks
         cursor.execute("PRAGMA table_info(tasks)")
-        columns_info = [row[1] for row in cursor.fetchall()]
-        
-        if 'last_updated' not in columns_info:
-            print("🔧 Добавляем колонку last_updated...")
+        tasks_columns = [row[1] for row in cursor.fetchall()]
+        if 'last_updated' not in tasks_columns:
             cursor.execute('ALTER TABLE tasks ADD COLUMN last_updated INTEGER DEFAULT 0')
-            print("✅ last_updated добавлена!")
+            print("✅ last_updated добавлена в tasks")
         
-        # Основная таблица tasks (если нет вообще)
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS tasks (
-                id INTEGER PRIMARY KEY,
-                ''' + ', '.join([f'{col} INTEGER DEFAULT 0' for col in columns]) + ''',
-                last_updated INTEGER DEFAULT 0
-            )
-        ''')
+        # 🔥 2. Создаем leaderboard_cache если нет
+        cursor.execute("PRAGMA table_info(leaderboard_cache)")
+        cache_exists = cursor.fetchall()
+        if not cache_exists:
+            print("🔧 Создаем таблицу leaderboard_cache...")
+            cursor.execute('''
+                CREATE TABLE leaderboard_cache (
+                    id INTEGER PRIMARY KEY,
+                    rating INTEGER DEFAULT 0,
+                    rank INTEGER DEFAULT 0,
+                    last_updated INTEGER DEFAULT 0,
+                    username TEXT DEFAULT ''
+                )
+            ''')
+            print("✅ leaderboard_cache создана!")
+        
+        # 🔥 3. Заполняем кэш рейтингов
+        recalculate_leaderboard_cache(conn, cursor)
         
         # Тестовый пользователь
         cursor.execute('INSERT OR IGNORE INTO tasks (id) VALUES (123456)')
         conn.commit()
-        print("✅ DB OK")
+        print("✅ DB + КЭШ полностью готовы!")
         conn.close()
     except Exception as e:
         print(f"❌ INIT DB ERROR: {e}")
         raise
 
-
 def recalculate_leaderboard_cache(conn, cursor):
-    """Пересчитывает кэш рейтингов для ВСЕХ игроков"""
-    print("🔄 Пересчет кэша рейтингов...")
-    
-    # 1. Берем всех из tasks
-    cursor.execute('SELECT id FROM tasks WHERE id IS NOT NULL')
-    user_ids = [row[0] for row in cursor.fetchall()]
-    
-    players = []
-    for uid in user_ids:
-        cursor.execute('SELECT * FROM tasks WHERE id = ?', (uid,))
-        row = cursor.fetchone()
-        done_count = sum(1 for i in range(1, len(columns)+1) if row and row[i] == 1)
-        players.append({"id": uid, "rating": done_count})
-    
-    # 2. Сортируем
-    players.sort(key=lambda x: x["rating"], reverse=True)
-    
-    # 3. Записываем места в КЭШ!
-    for i, player in enumerate(players):
-        cursor.execute('''
-            INSERT OR REPLACE INTO leaderboard_cache (id, rating, rank, last_updated)
-            VALUES (?, ?, ?, ?)
-        ''', (player["id"], player["rating"], i+1, int(time.time())))
-    
-    print(f"✅ Кэш обновлен: {len(players)} игроков")
+    """Пересчитывает кэш для всех игроков"""
+    try:
+        print("🔄 Пересчет кэша...")
+        
+        # Берем всех игроков
+        cursor.execute('SELECT id FROM tasks WHERE id IS NOT NULL')
+        user_ids = [row[0] for row in cursor.fetchall()]
+        
+        players = []
+        for uid in user_ids:
+            cursor.execute('SELECT * FROM tasks WHERE id = ?', (uid,))
+            row = cursor.fetchone()
+            done_count = sum(1 for i in range(1, len(columns)+1) if row and row[i] == 1)
+            players.append({"id": uid, "rating": done_count})
+        
+        # Сортируем и записываем места
+        players.sort(key=lambda x: x["rating"], reverse=True)
+        for i, player in enumerate(players):
+            cursor.execute('''
+                INSERT OR REPLACE INTO leaderboard_cache (id, rating, rank, last_updated)
+                VALUES (?, ?, ?, ?)
+            ''', (player["id"], player["rating"], i+1, int(time.time())))
+        
+        print(f"✅ Кэш: {len(players)} игроков")
+    except Exception as e:
+        print(f"❌ Кэш ошибка: {e}")
+
 
 # 🔥 ГЛОБАЛЬНАЯ обработка ошибок 500
 @app_api.exception_handler(500)
@@ -294,6 +305,7 @@ def update_leaderboard_positions(conn, cursor, changed_user_id, new_rating):
 
 if __name__ == "__main__":
     uvicorn.run("school_game:app_api", host="0.0.0.0", port=8000, reload=True)
+
 
 
 
