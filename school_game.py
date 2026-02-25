@@ -148,7 +148,6 @@ async def get_tasks(user_id: int = 123456):
             "pending_count": 25,
             "error": "demo_mode"
         }
-
 @app_api.get("/api/leaderboard")
 async def get_leaderboard(user_id: int = None):
     """ТОП игроков + позиция текущего"""
@@ -156,18 +155,25 @@ async def get_leaderboard(user_id: int = None):
     try:
         cursor = conn.cursor()
         
-        # Получаем ВСЕХ игроков с их прогрессом
-        cursor.execute('SELECT id, ' + ', '.join(columns) + ' FROM tasks')
+        # 🔥 ПРАВИЛЬНЫЙ SQL!
+        columns_sql = ', '.join(columns)  # "t11,t12,t13..."
+        cursor.execute(f'SELECT id, {columns_sql} FROM tasks WHERE id IS NOT NULL')
         rows = cursor.fetchall()
+        
+        print(f"📊 Загружено игроков: {len(rows)}")  # ДЛЯ ДЕБАГА
         
         # Считаем прогресс каждого
         players = []
         for row in rows:
             user_id_db = row[0]
+            if user_id_db is None: continue  # пропускаем NULL
+            
             done_count = sum(1 for i in range(1, len(row)) if row[i] == 1)
             players.append({"id": user_id_db, "done_count": done_count})
         
-        # Сортируем по убыванию выполненных задач
+        print(f"🎯 Игроков с данными: {len(players)}")  # ДЛЯ ДЕБАГА
+        
+        # Сортируем по убыванию
         players.sort(key=lambda x: x["done_count"], reverse=True)
         
         # Находим позицию текущего игрока
@@ -177,18 +183,21 @@ async def get_leaderboard(user_id: int = None):
                 if player["id"] == user_id:
                     my_rank = i + 1
                     break
-        
-        # ТОП-10 + позиция текущего
-        top_players = players[:10]
+            if not my_rank:
+                my_rank = len(players) + 1  # Если не найден
         
         return {
-            "top_players": top_players,
+            "top_players": players[:10],
             "my_rank": my_rank,
             "total_players": len(players),
-            "players_ahead": my_rank - 1 if my_rank else len(players)
+            "players_ahead": (my_rank - 1) if my_rank else len(players)
         }
+    except Exception as e:
+        print(f"❌ LEADERBOARD ERROR: {e}")
+        return {"error": str(e)}
     finally:
         conn.close()
+
 
 from fastapi import FastAPI, Request, Form
 from fastapi.responses import JSONResponse
@@ -226,6 +235,7 @@ async def complete_task(user_id: int = Form(...), task_id: str = Form(...)):
 
 if __name__ == "__main__":
     uvicorn.run("school_game:app_api", host="0.0.0.0", port=8000, reload=True)
+
 
 
 
